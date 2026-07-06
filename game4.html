@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>30マスすごろく</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      font-family: "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background: linear-gradient(160deg, #f7fbff, #e6f3ff);
+      color: #15314f;
+      display: grid;
+      place-items: center;
+    }
+
+    .game {
+      width: min(980px, 100%);
+      background: #fff;
+      border: 1px solid #a9c7e7;
+      border-radius: 14px;
+      box-shadow: 0 10px 24px rgba(25, 82, 145, 0.12);
+      padding: 18px;
+    }
+
+    h1 { margin: 0 0 14px; font-size: 28px; }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(10, 84px);
+      grid-auto-rows: 84px;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .cell {
+      width: 84px;
+      height: 84px;
+      border: 1px solid #a9c7e7;
+      border-radius: 10px;
+      background: #f9fcff;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .cell span { font-size: 12px; font-weight: 700; color: #2d4f73; }
+    .start { background: #e7f6e7; border-color: #9bc79b; }
+    .goal { background: #fff5dd; border-color: #e3b759; }
+
+    .players {
+      display: grid;
+      grid-template-columns: repeat(2, 24px);
+      grid-auto-rows: 24px;
+      gap: 4px;
+      margin-top: auto;
+      justify-content: end;
+      min-height: 52px;
+    }
+
+    .player {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 3px 8px rgba(21, 49, 79, 0.25);
+    }
+
+    .player-1 { background: #1c6fd8; }
+    .player-2 { background: #d84242; }
+    .player-3 { background: #1f9d62; }
+    .player-4 { background: #8a4ad8; }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .controls label { font-weight: 700; }
+    .controls select {
+      border: 1px solid #a9c7e7;
+      border-radius: 8px;
+      padding: 8px 10px;
+      background: #fff;
+      color: #15314f;
+      font-weight: 700;
+    }
+
+    button {
+      border: 1px solid #1a5fb6;
+      background: linear-gradient(180deg, #2d83f1, #1c6fd8);
+      color: #fff;
+      border-radius: 10px;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .status {
+      background: #f5faff;
+      border: 1px solid #cfe2f8;
+      border-radius: 10px;
+      padding: 10px 12px;
+      line-height: 1.6;
+    }
+
+    .dice-visual { margin-top: 10px; }
+    .dice-visual img {
+      width: 56px;
+      height: 56px;
+      border: 1px solid #c9dbef;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .result {
+      margin-top: 8px;
+      padding: 6px 8px;
+      border: 1px dashed #b8d2eb;
+      border-radius: 8px;
+      background: #fafdff;
+      font-weight: 700;
+    }
+
+    .logs {
+      margin-top: 10px;
+      border: 1px solid #d8e7f7;
+      border-radius: 10px;
+      padding: 10px;
+      background: #fcfeff;
+      max-height: 180px;
+      overflow: auto;
+      font-size: 14px;
+    }
+
+    .logs p { margin: 0 0 6px; }
+    .logs p:last-child { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>30マスすごろく</h1>
+    <section id="board" class="board" aria-label="すごろく盤面"></section>
+
+    <div class="controls">
+      <label for="playerCount">プレイヤー人数</label>
+      <select id="playerCount" aria-label="プレイヤー人数">
+        <option value="1">1人</option>
+        <option value="2">2人</option>
+        <option value="3">3人</option>
+        <option value="4">4人</option>
+      </select>
+      <button id="applyPlayersBtn" type="button">人数を反映</button>
+      <button id="rollBtn" type="button">サイコロを振る</button>
+      <button id="restartBtn" type="button">最初から</button>
+    </div>
+
+    <section class="status">
+      <div>現在プレイヤー: <strong id="currentPlayer">P1</strong></div>
+      <div>現在位置: <strong id="position">P1: 0</strong></div>
+      <div>出目: <strong id="dice">-</strong></div>
+      <div class="dice-visual"><img id="diceImage" alt="サイコロ画像" /></div>
+      <div id="message">サイコロを振ってスタート！</div>
+      <div id="result" class="result"></div>
+    </section>
+
+    <section id="logs" class="logs" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const GOAL = 30;
+    let playerCount = 1;
+    let positions = [0];
+    let currentPlayer = 0;
+    let turn = 0;
+    let finished = false;
+
+    const board = document.getElementById("board");
+    const playerCountEl = document.getElementById("playerCount");
+    const applyPlayersBtn = document.getElementById("applyPlayersBtn");
+    const rollBtn = document.getElementById("rollBtn");
+    const restartBtn = document.getElementById("restartBtn");
+    const currentPlayerEl = document.getElementById("currentPlayer");
+    const positionEl = document.getElementById("position");
+    const diceEl = document.getElementById("dice");
+    const diceImageEl = document.getElementById("diceImage");
+    const messageEl = document.getElementById("message");
+    const resultEl = document.getElementById("result");
+    const logs = document.getElementById("logs");
+
+    function createBoard() {
+      board.innerHTML = "";
+      for (let i = 0; i <= GOAL; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        if (i === 0) cell.classList.add("start");
+        if (i === GOAL) cell.classList.add("goal");
+        cell.dataset.step = String(i);
+
+        const label = document.createElement("span");
+        label.textContent = i === 0 ? "START" : i === GOAL ? "GOAL" : String(i);
+        cell.appendChild(label);
+        board.appendChild(cell);
+      }
+    }
+
+    function renderPlayers() {
+      board.querySelectorAll(".players").forEach((group) => group.remove());
+      for (let i = 0; i < playerCount; i++) {
+        const target = board.querySelector(`[data-step="${positions[i]}"]`);
+        if (!target) continue;
+        let group = target.querySelector(".players");
+        if (!group) {
+          group = document.createElement("div");
+          group.className = "players";
+          target.appendChild(group);
+        }
+        const player = document.createElement("div");
+        player.className = `player player-${i + 1}`;
+        player.textContent = `P${i + 1}`;
+        group.appendChild(player);
+      }
+      currentPlayerEl.textContent = `P${currentPlayer + 1}`;
+      positionEl.textContent = positions.map((p, i) => `P${i + 1}: ${p}`).join(" / ");
+    }
+
+    function diceSvg(face) {
+      const points = {
+        1: [[50, 50]],
+        2: [[30, 30], [70, 70]],
+        3: [[30, 30], [50, 50], [70, 70]],
+        4: [[30, 30], [70, 30], [30, 70], [70, 70]],
+        5: [[30, 30], [70, 30], [50, 50], [30, 70], [70, 70]],
+        6: [[30, 28], [70, 28], [30, 50], [70, 50], [30, 72], [70, 72]]
+      };
+      const dots = points[face].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="#15314f"/>`).join("");
+      return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="6" y="6" width="88" height="88" rx="16" fill="#fff" stroke="#b8d2eb" stroke-width="4"/>${dots}</svg>`)}`;
+    }
+
+    function setDiceDisplay(dice) {
+      if (!dice) {
+        diceEl.textContent = "-";
+        diceImageEl.removeAttribute("src");
+        diceImageEl.alt = "サイコロ画像";
+        return;
+      }
+      diceEl.textContent = String(dice);
+      diceImageEl.src = diceSvg(dice);
+      diceImageEl.alt = `サイコロの${dice}`;
+    }
+
+    function addLog(text) {
+      const p = document.createElement("p");
+      p.textContent = text;
+      logs.prepend(p);
+    }
+
+    function setMessage(text) { messageEl.textContent = text; }
+
+    function rollDice() {
+      if (finished) return;
+      const dice = Math.floor(Math.random() * 6) + 1;
+      turn += 1;
+      setDiceDisplay(dice);
+
+      const playerLabel = `P${currentPlayer + 1}`;
+      const next = positions[currentPlayer] + dice;
+      if (next >= GOAL) {
+        positions[currentPlayer] = GOAL;
+        finished = true;
+        renderPlayers();
+        setMessage(`${playerLabel}がゴール！ 合計${turn}ターンで決着！`);
+        resultEl.textContent = `結果: ${playerLabel}の勝利`;
+        addLog(`${turn}ターン目: ${playerLabel} が ${dice} を出してゴール！`);
+        rollBtn.disabled = true;
+        return;
+      }
+
+      positions[currentPlayer] = next;
+      addLog(`${turn}ターン目: ${playerLabel} が ${dice} を出して ${next} マス目へ移動`);
+      currentPlayer = (currentPlayer + 1) % playerCount;
+      renderPlayers();
+      setMessage(`${turn}ターン目: ${playerLabel} は ${next} マス目。次はP${currentPlayer + 1}の番です。`);
+    }
+
+    function restart(showLog = true) {
+      positions = Array(playerCount).fill(0);
+      currentPlayer = 0;
+      turn = 0;
+      finished = false;
+      setDiceDisplay(0);
+      logs.innerHTML = "";
+      resultEl.textContent = "順位: -";
+      setMessage("サイコロを振ってスタート！");
+      rollBtn.disabled = false;
+      renderPlayers();
+      if (showLog) addLog(`${playerCount}人でゲームをリスタートしました`);
+    }
+
+    function applyPlayerCount() {
+      playerCount = Math.min(4, Math.max(1, Number(playerCountEl.value) || 1));
+      restart(false);
+      addLog(`プレイヤー人数を${playerCount}人に変更しました`);
+    }
+
+    rollBtn.addEventListener("click", rollDice);
+    restartBtn.addEventListener("click", restart);
+    applyPlayersBtn.addEventListener("click", applyPlayerCount);
+
+    createBoard();
+    restart(false);
+  </script>
+</body>
+</html>
