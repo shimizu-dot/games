@@ -6,98 +6,544 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ゲーム一覧</title>
   <style>
+    :root {
+      --ink: #171821;
+      --paper: #fffdf4;
+      --cabinet: #ff3d7f;
+      --screen: #16213e;
+      --cyan: #3ddcff;
+      --yellow: #ffd447;
+      --green: #61e294;
+      --pink: #ff71ce;
+      --orange: #ff9f1c;
+      --shadow: #10121a;
+    }
+
     * {
       box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: #20c7b7;
     }
 
     body {
       margin: 0;
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
-      padding: 24px;
+      padding: 18px;
       font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
-      color: #172033;
+      color: var(--ink);
       background:
-        radial-gradient(circle at 18% 16%, rgba(255, 196, 87, 0.25), transparent 28%),
-        radial-gradient(circle at 84% 20%, rgba(71, 180, 255, 0.22), transparent 30%),
-        linear-gradient(135deg, #f7fbff, #eef4f8 48%, #fff7e8);
+        repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 40px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 40px),
+        linear-gradient(135deg, #ffe156 0%, #20c7b7 48%, #4d96ff 100%);
     }
 
     main {
-      width: min(100%, 720px);
+      width: min(100%, 1060px);
+      border: 6px solid var(--shadow);
+      border-radius: 22px;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0 12px, transparent 12px 24px),
+        var(--cabinet);
+      box-shadow: 0 14px 0 var(--shadow), 0 26px 48px rgba(16, 18, 26, 0.28);
+      padding: 18px;
+    }
+
+    .screen {
+      border: 4px solid var(--shadow);
+      border-radius: 14px;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.06) 50%, rgba(0, 0, 0, 0.05) 50%),
+        var(--screen);
+      background-size: 100% 8px, auto;
+      padding: 18px;
+    }
+
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
     }
 
     h1 {
-      margin: 0 0 18px;
-      font-size: clamp(28px, 7vw, 44px);
+      margin: 0;
+      color: #fff;
+      font-size: 2.3rem;
       line-height: 1.1;
-      text-align: center;
+      text-shadow: 4px 4px 0 #000;
+    }
+
+    .marquee {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 8px 14px;
+      border: 3px solid var(--shadow);
+      border-radius: 8px;
+      background: var(--yellow);
+      box-shadow: 4px 4px 0 var(--shadow);
+      color: var(--shadow);
+      font-size: 0.85rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
     }
 
     .games {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
     }
 
     .game-link {
       display: grid;
-      gap: 10px;
-      min-height: 132px;
-      padding: 20px;
-      color: inherit;
+      grid-template-rows: 108px 1fr 40px;
+      gap: 12px;
+      min-height: 250px;
+      padding: 14px;
+      color: var(--ink);
       text-decoration: none;
-      background: rgba(255, 255, 255, 0.82);
-      border: 1px solid rgba(23, 32, 51, 0.14);
+      border: 4px solid var(--shadow);
       border-radius: 8px;
-      box-shadow: 0 16px 36px rgba(23, 32, 51, 0.12);
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      box-shadow: 0 8px 0 var(--shadow);
+      transition: transform 140ms ease, box-shadow 140ms ease;
     }
 
     .game-link:hover,
     .game-link:focus-visible {
-      transform: translateY(-3px);
-      border-color: rgba(23, 32, 51, 0.32);
-      box-shadow: 0 20px 42px rgba(23, 32, 51, 0.18);
-      outline: none;
+      transform: translateY(-4px);
+      box-shadow: 0 12px 0 var(--shadow);
     }
 
-    .game-link span {
-      align-self: end;
-      font-size: 24px;
+    .game-link:focus-visible {
+      outline: 4px solid #fff;
+      outline-offset: 3px;
+    }
+
+    .game-link:active {
+      transform: translateY(4px);
+      box-shadow: 0 4px 0 var(--shadow);
+    }
+
+    .game-link:nth-child(1) {
+      background: #fff0a8;
+    }
+
+    .game-link:nth-child(2) {
+      background: #b9f6ff;
+    }
+
+    .game-link:nth-child(3) {
+      background: #ffd0df;
+    }
+
+    .game-link:nth-child(4) {
+      background: #c7f9cc;
+    }
+
+    .preview {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid var(--shadow);
+      border-radius: 8px;
+      background: var(--paper);
+    }
+
+    .copy {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .copy small {
+      width: fit-content;
+      padding: 4px 8px;
+      border: 2px solid var(--shadow);
+      border-radius: 6px;
+      background: #fff;
+      box-shadow: 3px 3px 0 var(--shadow);
+      font-size: 0.78rem;
       font-weight: 800;
     }
 
-    .game-link small {
-      color: #5c677a;
-      font-size: 14px;
-      font-weight: 700;
+    .copy span {
+      font-size: 1.34rem;
+      font-weight: 900;
+      line-height: 1.18;
+      overflow-wrap: anywhere;
+    }
+
+    .play {
+      display: grid;
+      place-items: center;
+      border: 3px solid var(--shadow);
+      border-radius: 999px;
+      background: var(--shadow);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    .suika-art {
+      background: linear-gradient(#fff7c2 0 62%, #f7b267 62% 100%);
+    }
+
+    .fruit {
+      position: absolute;
+      display: block;
+      border: 3px solid var(--shadow);
+      border-radius: 50%;
+      box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.12);
+    }
+
+    .fruit.big {
+      width: 54px;
+      height: 54px;
+      left: 58px;
+      bottom: 8px;
+      background: #45c95a;
+    }
+
+    .fruit.mid {
+      width: 40px;
+      height: 40px;
+      left: 22px;
+      bottom: 12px;
+      background: #ff5f7e;
+    }
+
+    .fruit.small {
+      width: 30px;
+      height: 30px;
+      right: 18px;
+      bottom: 42px;
+      background: #ffd23f;
+    }
+
+    .tetris-art {
+      display: grid;
+      grid-template-columns: repeat(4, 20px);
+      grid-template-rows: repeat(4, 20px);
+      place-content: center;
+      gap: 5px;
+      background: #151a35;
+    }
+
+    .block {
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--shadow);
+      box-shadow: inset 3px 3px 0 rgba(255, 255, 255, 0.38);
+    }
+
+    .block.cyan { background: var(--cyan); }
+    .block.yellow { background: var(--yellow); }
+    .block.pink { background: var(--pink); }
+    .block.green { background: var(--green); }
+    .block.orange { background: var(--orange); }
+
+    .bomber-art {
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.28) 0 8px, transparent 8px 16px),
+        #5046e5;
+    }
+
+    .bomb {
+      position: absolute;
+      width: 62px;
+      height: 62px;
+      left: 50%;
+      bottom: 18px;
+      border: 4px solid var(--shadow);
+      border-radius: 50%;
+      background: #242633;
+      box-shadow: inset -8px -9px 0 #10121a;
+      transform: translateX(-50%);
+    }
+
+    .bomb::before {
+      content: "";
+      position: absolute;
+      width: 28px;
+      height: 14px;
+      left: 38px;
+      top: -8px;
+      border: 4px solid var(--shadow);
+      border-bottom: 0;
+      border-radius: 16px 16px 0 0;
+      transform: rotate(32deg);
+    }
+
+    .bomb::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      right: -24px;
+      top: -18px;
+      border: 3px solid var(--shadow);
+      background: var(--yellow);
+      box-shadow: 8px 7px 0 var(--orange), -7px 8px 0 #fff;
+      transform: rotate(15deg);
+    }
+
+    .board-art {
+      display: grid;
+      grid-template-columns: repeat(5, 22px);
+      grid-template-rows: repeat(4, 18px);
+      place-content: center;
+      gap: 5px;
+      background: #f6fff4;
+    }
+
+    .step {
+      border: 3px solid var(--shadow);
+      border-radius: 5px;
+      background: #fff;
+    }
+
+    .step.start { background: var(--green); }
+    .step.goal { background: var(--yellow); }
+    .step.dice {
+      position: relative;
+      background: #fff;
+    }
+
+    .step.dice::before {
+      content: "";
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      left: 5px;
+      top: 4px;
+      border-radius: 50%;
+      background: var(--shadow);
+      box-shadow: 8px 5px 0 var(--shadow), 4px 10px 0 var(--shadow);
+    }
+
+    @media (max-width: 900px) {
+      .games {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      body {
+        align-items: stretch;
+        padding: 10px;
+      }
+
+      main {
+        border-width: 4px;
+        border-radius: 16px;
+        box-shadow: 0 8px 0 var(--shadow), 0 18px 32px rgba(16, 18, 26, 0.24);
+        padding: 10px;
+      }
+
+      .screen {
+        min-height: calc(100dvh - 40px);
+        border-width: 3px;
+        padding: 12px;
+      }
+
+      .top {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      h1 {
+        font-size: 1.65rem;
+        text-shadow: 3px 3px 0 #000;
+      }
+
+      .marquee {
+        justify-content: center;
+        min-height: 38px;
+      }
+
+      .games {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .game-link {
+        grid-template-columns: 78px minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        align-items: center;
+        min-height: 112px;
+        padding: 10px;
+        gap: 10px;
+        box-shadow: 0 6px 0 var(--shadow);
+      }
+
+      .preview {
+        grid-row: 1 / span 2;
+        width: 78px;
+        height: 78px;
+      }
+
+      .copy {
+        min-width: 0;
+      }
+
+      .copy small {
+        font-size: 0.72rem;
+      }
+
+      .copy span {
+        font-size: 1.05rem;
+      }
+
+      .play {
+        grid-column: 2;
+        justify-self: start;
+        width: 62px;
+        height: 32px;
+        font-size: 0.78rem;
+      }
+
+      .fruit.big {
+        width: 38px;
+        height: 38px;
+        left: 33px;
+      }
+
+      .fruit.mid {
+        width: 30px;
+        height: 30px;
+        left: 8px;
+      }
+
+      .fruit.small {
+        width: 22px;
+        height: 22px;
+        right: 7px;
+        bottom: 34px;
+      }
+
+      .tetris-art {
+        grid-template-columns: repeat(4, 15px);
+        grid-template-rows: repeat(4, 15px);
+        gap: 3px;
+      }
+
+      .block {
+        width: 15px;
+        height: 15px;
+        border-width: 2px;
+      }
+
+      .bomb {
+        width: 44px;
+        height: 44px;
+        bottom: 16px;
+      }
+
+      .board-art {
+        grid-template-columns: repeat(5, 11px);
+        grid-template-rows: repeat(4, 11px);
+        gap: 2px;
+      }
     }
   </style>
 </head>
 
 <body>
   <main>
-    <h1>ゲーム一覧</h1>
-    <nav class="games" aria-label="ゲーム一覧">
-      <a class="game-link" href="game1.html">
-        <small>GAME 1</small>
-        <span>スイカゲーム風</span>
-      </a>
-      <a class="game-link" href="game2.html">
-        <small>GAME 2</small>
-        <span>テトリス風</span>
-      </a>
-      <a class="game-link" href="game3.html">
-        <small>GAME 3</small>
-        <span>ボンバーマン風</span>
-      </a>
-      <a class="game-link" href="game4.html">
-        <small>GAME 4</small>
-        <span>30マスすごろく</span>
-      </a>
-    </nav>
+    <div class="screen">
+      <div class="top">
+        <h1>ゲームセレクト</h1>
+        <div class="marquee">ARCADE MENU</div>
+      </div>
+      <nav class="games" aria-label="ゲーム一覧">
+        <a class="game-link" href="game1.html">
+          <div class="preview suika-art" aria-hidden="true">
+            <span class="fruit big"></span>
+            <span class="fruit mid"></span>
+            <span class="fruit small"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 1</small>
+            <span>スイカゲーム風</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game2.html">
+          <div class="preview tetris-art" aria-hidden="true">
+            <span class="block cyan"></span>
+            <span class="block cyan"></span>
+            <span class="block yellow"></span>
+            <span class="block pink"></span>
+            <span class="block green"></span>
+            <span class="block cyan"></span>
+            <span class="block yellow"></span>
+            <span class="block pink"></span>
+            <span class="block green"></span>
+            <span class="block orange"></span>
+            <span class="block orange"></span>
+            <span class="block pink"></span>
+            <span class="block green"></span>
+            <span class="block green"></span>
+            <span class="block orange"></span>
+            <span class="block yellow"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 2</small>
+            <span>テトリス風</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game3.html">
+          <div class="preview bomber-art" aria-hidden="true">
+            <span class="bomb"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 3</small>
+            <span>ボンバーマン風</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game4.html">
+          <div class="preview board-art" aria-hidden="true">
+            <span class="step start"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step dice"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step dice"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step dice"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step"></span>
+            <span class="step goal"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 4</small>
+            <span>30マスすごろく</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+      </nav>
+    </div>
   </main>
 </body>
 
