@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ボンバーマン風ゲーム | ARCADE</title>
+        <style>
+    :root {
+      color-scheme: dark;
+      --bg-1: #060b16;
+      --bg-2: #0f1726;
+      --panel: rgba(8, 14, 25, 0.78);
+      --panel-line: rgba(155, 181, 255, 0.2);
+      --text: #eef3ff;
+      --muted: #b8c4de;
+      --accent: #ffb347;
+      --accent-2: #5be88a;
+      --danger: #ff5c5c;
+      --neon: #7ce2ff;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(94, 118, 194, 0.22), transparent 34%),
+        radial-gradient(circle at 20% 20%, rgba(255, 176, 71, 0.12), transparent 26%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1));
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      color: var(--text);
+      font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(99, 123, 201, 0.28), transparent 34%),
+        radial-gradient(circle at 10% 90%, rgba(91, 232, 138, 0.08), transparent 22%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1));
+      overflow: hidden;
+    }
+
+    .container {
+      width: min(100%, 760px);
+      padding: 22px 22px 18px;
+      border: 1px solid rgba(181, 198, 255, 0.14);
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(11, 17, 30, 0.84), rgba(7, 11, 20, 0.94));
+      box-shadow:
+        0 30px 60px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(14px);
+      text-align: center;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .container::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(255, 179, 71, 0.65), rgba(91, 232, 138, 0.12), rgba(123, 154, 255, 0.55));
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(124, 226, 255, 0.25);
+      border-radius: 999px;
+      background: rgba(124, 226, 255, 0.08);
+      color: #bfefff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      box-shadow: 0 0 22px rgba(124, 226, 255, 0.08);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(26px, 3.4vw, 38px);
+      letter-spacing: 0.14em;
+      line-height: 1.1;
+      background: linear-gradient(180deg, #fff5c2, #ffb347 55%, #ff7b00);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 0 22px rgba(255, 179, 71, 0.22);
+    }
+
+    .subtitle {
+      margin: 0 0 14px;
+      color: #8ea6d7;
+      font-size: 12px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+
+    canvas {
+      width: min(100%, 520px);
+      height: auto;
+      aspect-ratio: 520 / 484;
+      display: block;
+      margin: 0 auto;
+      border: 1px solid rgba(120, 160, 255, 0.38);
+      border-radius: 18px;
+      background: linear-gradient(180deg, #081221, #0b1830);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+        0 18px 40px rgba(0, 0, 0, 0.45),
+        0 0 32px rgba(70, 120, 220, 0.24);
+      image-rendering: auto;
+    }
+
+    .info {
+      width: min(100%, 520px);
+      margin: 14px auto 0;
+      padding: 12px 14px 14px;
+      border: 1px solid var(--panel-line);
+      border-radius: 16px;
+      background: var(--panel);
+      color: var(--muted);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .info p {
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .info p + p {
+      margin-top: 8px;
+    }
+
+    .info p:first-child {
+      color: #dbe5ff;
+    }
+
+    .hint-mobile {
+      display: none;
+      color: #b8f7d1;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+
+    #status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 8px 16px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: #fff2c5;
+      background: linear-gradient(180deg, rgba(255, 179, 71, 0.16), rgba(255, 179, 71, 0.08));
+      border: 1px solid rgba(255, 179, 71, 0.34);
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+    }
+
+    .mobile-controls {
+      display: none;
+      margin-top: 14px;
+      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
+      align-items: stretch;
+    }
+
+    .mobile-pad,
+    .mobile-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .mobile-pad {
+      justify-items: center;
+    }
+
+    .mobile-pad-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 240px;
+    }
+
+    .pad-btn {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      min-height: 54px;
+      padding: 0 14px;
+      color: #fff;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      background: linear-gradient(180deg, rgba(32, 45, 78, 0.96), rgba(14, 22, 42, 0.96));
+      box-shadow:
+        0 10px 18px rgba(0, 0, 0, 0.24),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .pad-btn:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    .pad-btn--dir {
+      width: 100%;
+      font-size: 18px;
+      color: #d9efff;
+      border-color: rgba(124, 226, 255, 0.22);
+    }
+
+    .pad-btn--bomb {
+      min-height: 64px;
+      background: linear-gradient(180deg, #ffb347, #ea580c);
+      border-color: rgba(255, 179, 71, 0.45);
+      box-shadow:
+        0 14px 22px rgba(234, 88, 12, 0.25),
+        0 0 24px rgba(255, 179, 71, 0.1);
+    }
+
+    .pad-btn--next {
+      min-height: 48px;
+      color: #d8ffe7;
+      background: linear-gradient(180deg, #1f6f4b, #0d3b29);
+      border-color: rgba(91, 232, 138, 0.28);
+    }
+
+    .pad-btn--restart {
+      min-height: 48px;
+      background: linear-gradient(180deg, #3a224f, #1d1328);
+      border-color: rgba(255, 92, 92, 0.28);
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        width: min(100%, 620px);
+        padding: 14px 14px 16px;
+        border-radius: 18px;
+      }
+
+      .mobile-controls {
+        display: grid;
+      }
+
+      .hint-mobile {
+        display: block;
+        margin-top: 2px;
+      }
+
+      .info {
+        padding: 10px 12px 12px;
+      }
+
+      .info p:first-child {
+        line-height: 1.5;
+      }
+
+      .mobile-controls {
+        grid-template-columns: 1fr;
+      }
+
+      .mobile-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .pad-btn {
+        min-height: 52px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="eyebrow">ARCADE ACTION</div>
+    <h1>ボンバーマン風ゲーム</h1>
+    <p class="subtitle">BOMB UP, MOVE FAST, CLEAR THE STAGE</p>
+    <canvas id="gameCanvas" width="520" height="484"></canvas>
+    <div class="info">
+      <p>操作: 矢印キーで移動 / Spaceキーで爆弾を設置 / Rキーでやり直し</p>
+      <p class="hint-mobile">スマホは下のボタンで操作できます</p>
+      <p id="status">ステータス: ゲーム開始</p>
+      <div class="mobile-controls" aria-label="スマホ操作">
+        <div class="mobile-pad">
+          <button type="button" class="pad-btn pad-btn--dir" id="upBtn" aria-label="上へ">▲</button>
+          <div class="mobile-pad-row">
+            <button type="button" class="pad-btn pad-btn--dir" id="leftBtn" aria-label="左へ">◀</button>
+            <button type="button" class="pad-btn pad-btn--dir" id="downBtn" aria-label="下へ">▼</button>
+            <button type="button" class="pad-btn pad-btn--dir" id="rightBtn" aria-label="右へ">▶</button>
+          </div>
+        </div>
+        <div class="mobile-actions">
+          <button type="button" class="pad-btn pad-btn--bomb" id="bombBtn">BOMB</button>
+          <button type="button" class="pad-btn pad-btn--next" id="nextBtn">NEXT</button>
+          <button type="button" class="pad-btn pad-btn--restart" id="restartMobileBtn">RESET</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+const statusEl = document.getElementById("status");
+const upBtn = document.getElementById("upBtn");
+const downBtn = document.getElementById("downBtn");
+const leftBtn = document.getElementById("leftBtn");
+const rightBtn = document.getElementById("rightBtn");
+const bombBtn = document.getElementById("bombBtn");
+const nextBtn = document.getElementById("nextBtn");
+const restartMobileBtn = document.getElementById("restartMobileBtn");
+
+const COLS = 13;
+const ROWS = 11;
+const TILE = 40;
+const HUD_HEIGHT = 44;
+const BOMB_TIMER = 2000;
+const EXPLOSION_DURATION = 420;
+const BOMB_RANGE = 2;
+const ENEMY_MOVE_INTERVAL = 900;
+const PLAYER_EASE = 0.32;
+const ENEMY_EASE = 0.18;
+const SHAKE_DURATION = 220;
+
+const TILE_EMPTY = 0;
+const TILE_WALL = 1;
+const TILE_BLOCK = 2;
+
+const ENEMY_COLORS = [
+  { body: "#d92d38", dark: "#8b0000" },
+  { body: "#9b3fd9", dark: "#5a1f87" },
+  { body: "#2dba6c", dark: "#136b3c" },
+];
+
+const ITEM_TYPES = ["fire", "bomb", "speed"];
+const ITEM_SPAWN_CHANCE = 0.45;
+const ITEM_COLORS = { fire: "#ff5c33", bomb: "#7fd1ff", speed: "#ffd83d" };
+const MAX_BOMB_RANGE = 6;
+const MAX_BOMBS = 5;
+const MAX_SPEED_LEVEL = 3;
+
+const GRID = [];
+const bombs = [];
+const explosions = [];
+const enemies = [];
+const particles = [];
+const items = [];
+let hiddenItems = {};
+let gameOver = false;
+let gameWin = false;
+let stage = 1;
+let shakeStart = -Infinity;
+let shakeMagnitude = 0;
+
+const player = {
+  x: 1,
+  y: 1,
+  px: TILE,
+  py: TILE,
+  facing: "down",
+  alive: true,
+  bombRange: BOMB_RANGE,
+  maxBombs: 1,
+  speedLevel: 0,
+};
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function hash(x, y) {
+  const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+function initGrid() {
+  for (let y = 0; y < ROWS; y++) {
+    GRID[y] = [];
+    for (let x = 0; x < COLS; x++) {
+      if (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1) {
+        GRID[y][x] = TILE_WALL;
+      } else if (x % 2 === 0 && y % 2 === 0) {
+        GRID[y][x] = TILE_WALL;
+      } else {
+        GRID[y][x] = Math.random() < 0.65 ? TILE_BLOCK : TILE_EMPTY;
+      }
+    }
+  }
+
+  const safeCells = [
+    [1, 1], [2, 1], [1, 2],
+    [COLS - 2, ROWS - 2], [COLS - 3, ROWS - 2], [COLS - 2, ROWS - 3],
+  ];
+  safeCells.forEach(([x, y]) => {
+    GRID[y][x] = TILE_EMPTY;
+  });
+
+  hiddenItems = {};
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (GRID[y][x] === TILE_BLOCK && Math.random() < ITEM_SPAWN_CHANCE) {
+        hiddenItems[`${x},${y}`] = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+      }
+    }
+  }
+}
+
+function spawnEnemies() {
+  const positions = [
+    [COLS - 2, ROWS - 2],
+    [COLS - 3, ROWS - 4],
+    [COLS - 5, ROWS - 2],
+  ];
+  positions.forEach(([x, y], i) => {
+    const palette = ENEMY_COLORS[i % ENEMY_COLORS.length];
+    enemies.push({
+      x, y,
+      px: x * TILE,
+      py: y * TILE,
+      facing: "down",
+      lastMovedAt: 0,
+      dead: false,
+      color: palette.body,
+      colorDark: palette.dark,
+    });
+  });
+}
+
+function drawFloor(x, y) {
+  const px = x * TILE;
+  const py = y * TILE;
+  const even = (x + y) % 2 === 0;
+  ctx.fillStyle = even ? "#1d5586" : "#194a76";
+  ctx.fillRect(px, py, TILE, TILE);
+  ctx.strokeStyle = "rgba(255,255,255,0.05)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+  ctx.fillStyle = "rgba(0,0,0,0.08)";
+  ctx.fillRect(px, py, TILE, 3);
+}
+
+function drawWall(x, y) {
+  const px = x * TILE;
+  const py = y * TILE;
+  const gradient = ctx.createLinearGradient(px, py, px, py + TILE);
+  gradient.addColorStop(0, "#73777e");
+  gradient.addColorStop(1, "#363a40");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(px, py, TILE, TILE);
+
+  ctx.strokeStyle = "rgba(0,0,0,0.4)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px + 1, py + 1, TILE - 2, TILE - 2);
+
+  ctx.fillStyle = "rgba(255,255,255,0.1)";
+  ctx.fillRect(px + 3, py + 3, TILE - 6, 3);
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.fillRect(px + 3, py + TILE - 6, TILE - 6, 3);
+
+  ctx.strokeStyle = "rgba(0,0,0,0.25)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(px + TILE / 2, py + 4);
+  ctx.lineTo(px + TILE / 2, py + TILE - 4);
+  ctx.stroke();
+}
+
+function drawRock(x, y) {
+  const px = x * TILE;
+  const py = y * TILE;
+  const h = hash(x, y);
+  const gradient = ctx.createLinearGradient(px, py, px + TILE, py + TILE);
+  gradient.addColorStop(0, "#9a7650");
+  gradient.addColorStop(0.5, `hsl(${28 + h * 8}, 48%, ${42 + h * 6}%)`);
+  gradient.addColorStop(1, "#6f4a28");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+  ctx.strokeStyle = "#553a1f";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(px + 2, py + 2, TILE - 4, TILE - 4);
+
+  ctx.fillStyle = "rgba(255,255,255,0.22)";
+  ctx.beginPath();
+  ctx.moveTo(px + 6, py + 8);
+  ctx.lineTo(px + 20 + h * 4, py + 6);
+  ctx.lineTo(px + 22, py + 12);
+  ctx.lineTo(px + 10, py + 16);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(px + 10, py + 22 + h * 3);
+  ctx.lineTo(px + 18, py + 18);
+  ctx.lineTo(px + 24, py + 26);
+  ctx.stroke();
+}
+
+function drawGrid() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const cell = GRID[y][x];
+      if (cell === TILE_WALL) {
+        drawWall(x, y);
+      } else if (cell === TILE_BLOCK) {
+        drawFloor(x, y);
+        drawRock(x, y);
+      } else {
+        drawFloor(x, y);
+      }
+    }
+  }
+}
+
+function drawItemIcon(type, now) {
+  const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, 15);
+  glow.addColorStop(0, `${ITEM_COLORS[type]}aa`);
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (type === "fire") {
+    ctx.save();
+    ctx.shadowColor = "#ff8c42";
+    ctx.shadowBlur = 6;
+    const grad = ctx.createLinearGradient(0, -10, 0, 10);
+    grad.addColorStop(0, "#fff3b0");
+    grad.addColorStop(0.5, "#ff8c33");
+    grad.addColorStop(1, "#d9381e");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.quadraticCurveTo(7, -2, 5, 5);
+    ctx.quadraticCurveTo(3, 9, 0, 10);
+    ctx.quadraticCurveTo(-3, 9, -5, 5);
+    ctx.quadraticCurveTo(-7, -2, 0, -10);
+    ctx.fill();
+    ctx.restore();
+  } else if (type === "bomb") {
+    ctx.fillStyle = "#111";
+    ctx.beginPath();
+    ctx.arc(0, 1, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.3)";
+    ctx.beginPath();
+    ctx.arc(-3, -2, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#7fd1ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-5, -9);
+    ctx.lineTo(5, -9);
+    ctx.moveTo(0, -12);
+    ctx.lineTo(0, -6);
+    ctx.stroke();
+  } else if (type === "speed") {
+    ctx.save();
+    ctx.shadowColor = "#ffe97a";
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = "#ffd83d";
+    ctx.beginPath();
+    ctx.moveTo(2, -11);
+    ctx.lineTo(-6, 2);
+    ctx.lineTo(-1, 2);
+    ctx.lineTo(-2, 11);
+    ctx.lineTo(7, -2);
+    ctx.lineTo(2, -2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawItems(now) {
+  items.forEach((item) => {
+    const age = now - item.spawnedAt;
+    const pop = age < 220 ? Math.sin(clamp(age / 220, 0, 1) * (Math.PI / 2)) : 1;
+    const bob = Math.sin(now / 260 + item.x * 3) * 3;
+    const cx = item.x * TILE + TILE / 2;
+    const cy = item.y * TILE + TILE / 2 + bob;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(pop, pop);
+    drawItemIcon(item.type, now);
+    ctx.restore();
+  });
+}
+
+function drawShadow(px, py, scale = 1) {
+  ctx.fillStyle = "rgba(0,0,0,0.3)";
+  ctx.beginPath();
+  ctx.ellipse(px + 20, py + 34, 13 * scale, 5 * scale, 0, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function roundRect(ctx, x, y, w, h, r, fill = true, stroke = false) {
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+  }
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
+function drawPlayer(now) {
+  if (!player.alive) return;
+  const px = player.px;
+  const py = player.py;
+  const moving = Math.hypot(player.x * TILE - px, player.y * TILE - py) > 1;
+  const bob = moving ? Math.sin(now / 70) * 2 : Math.sin(now / 320) * 1;
+  const legPhase = Math.sin(now / 75) * (moving ? 5 : 0);
+  const facingVec = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[player.facing];
+
+  drawShadow(px, py, 1.05);
+
+  const bodyGrad = ctx.createLinearGradient(px + 7, py + 8 + bob, px + 33, py + 34 + bob);
+  bodyGrad.addColorStop(0, "#fff8a6");
+  bodyGrad.addColorStop(0.28, "#ffe66c");
+  bodyGrad.addColorStop(0.7, "#ffbf00");
+  bodyGrad.addColorStop(1, "#9e5f00");
+  const faceGrad = ctx.createLinearGradient(px + 9, py + 6 + bob, px + 31, py + 24 + bob);
+  faceGrad.addColorStop(0, "#ffbf2f");
+  faceGrad.addColorStop(0.6, "#ff9a00");
+  faceGrad.addColorStop(1, "#d96d00");
+
+  ctx.fillStyle = "rgba(0,0,0,0.26)";
+  roundRect(ctx, px + 10, py + 31 + bob + Math.abs(legPhase) * 0.08, 7, 8 + legPhase * 0.35, 4);
+  roundRect(ctx, px + 23, py + 31 + bob - Math.abs(legPhase) * 0.08, 7, 8 - legPhase * 0.35, 4);
+
+  ctx.fillStyle = "#101010";
+  roundRect(ctx, px + 9, py + 30 + bob, 7, 7 + legPhase * 0.35, 3.5);
+  roundRect(ctx, px + 24, py + 30 + bob, 7, 7 - legPhase * 0.35, 3.5);
+
+  ctx.fillStyle = bodyGrad;
+  roundRect(ctx, px + 9, py + 13 + bob, 22, 20, 11);
+  ctx.fillStyle = faceGrad;
+  roundRect(ctx, px + 11, py + 8 + bob, 18, 14, 9);
+
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  roundRect(ctx, px + 11, py + 9 + bob, 15, 3, 2);
+  ctx.fillStyle = "rgba(255,255,255,0.18)";
+  roundRect(ctx, px + 28, py + 14 + bob, 3, 13, 2);
+  ctx.fillStyle = "rgba(255,244,180,0.22)";
+  roundRect(ctx, px + 10, py + 8 + bob, 4, 22, 2.5);
+  ctx.fillStyle = "rgba(0,0,0,0.16)";
+  roundRect(ctx, px + 29, py + 8 + bob, 2, 22, 1.5);
+  ctx.fillStyle = "rgba(0,0,0,0.12)";
+  roundRect(ctx, px + 9, py + 31 + bob, 22, 2, 1.5);
+
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 1.5;
+  roundRect(ctx, px + 11, py + 8 + bob, 18, 22, 10, false, true);
+
+  const eyeOffsetX = facingVec[0] * 2;
+  const eyeOffsetY = facingVec[1] * 2;
+  const eyeY = py + 16 + bob + eyeOffsetY;
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(px + 16 + eyeOffsetX, eyeY, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px + 24 + eyeOffsetX, eyeY, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#000";
+  ctx.beginPath();
+  ctx.arc(px + 16 + eyeOffsetX * 1.4, eyeY + eyeOffsetY * 0.2, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(px + 24 + eyeOffsetX * 1.4, eyeY + eyeOffsetY * 0.2, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+}
+
+function drawEnemies(now) {
+  enemies.forEach((enemy) => {
+    if (enemy.dead) return;
+    const ex = enemy.px;
+    const ey = enemy.py;
+    const moving = Math.hypot(enemy.x * TILE - ex, enemy.y * TILE - ey) > 1;
+    const bob = moving ? Math.sin(now / 90 + enemy.x) * 2 : Math.sin(now / 400 + enemy.x) * 1;
+    const facingVec = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[enemy.facing];
+
+    drawShadow(ex, ey, 0.95);
+
+    const bodyGrad = ctx.createLinearGradient(ex + 7, ey + 8 + bob, ex + 33, ey + 33 + bob);
+    bodyGrad.addColorStop(0, "#ff9ca2");
+    bodyGrad.addColorStop(0.28, "#ff6f7d");
+    bodyGrad.addColorStop(0.72, enemy.color);
+    bodyGrad.addColorStop(1, enemy.colorDark);
+    const headGrad = ctx.createLinearGradient(ex + 9, ey + 6 + bob, ex + 31, ey + 18 + bob);
+    headGrad.addColorStop(0, "#ffc4c9");
+    headGrad.addColorStop(0.55, enemy.color);
+    headGrad.addColorStop(1, enemy.colorDark);
+
+    ctx.fillStyle = "rgba(0,0,0,0.24)";
+    roundRect(ctx, ex + 10, ey + 31 + bob, 7, 6, 4);
+    roundRect(ctx, ex + 23, ey + 31 + bob, 7, 6, 4);
+
+    ctx.fillStyle = bodyGrad;
+    roundRect(ctx, ex + 9, ey + 11 + bob, 22, 22, 12);
+    ctx.fillStyle = headGrad;
+    roundRect(ctx, ex + 11, ey + 8 + bob, 18, 10, 8);
+
+    ctx.fillStyle = "rgba(255,255,255,0.42)";
+    roundRect(ctx, ex + 11, ey + 9 + bob, 15, 2, 1.5);
+    ctx.fillStyle = "rgba(255,255,255,0.16)";
+    roundRect(ctx, ex + 28, ey + 13 + bob, 3, 13, 2);
+    ctx.fillStyle = "rgba(255,240,240,0.16)";
+    roundRect(ctx, ex + 10, ey + 8 + bob, 4, 22, 2.5);
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    roundRect(ctx, ex + 29, ey + 8 + bob, 2, 22, 1.5);
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    roundRect(ctx, ex + 9, ey + 31 + bob, 22, 2, 1.5);
+
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 1.5;
+    roundRect(ctx, ex + 11, ey + 8 + bob, 18, 22, 10, false, true);
+
+    const eyeOffsetX = facingVec[0] * 2;
+    const eyeOffsetY = facingVec[1] * 2;
+    const eyeY = ey + 18 + bob + eyeOffsetY;
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(ex + 11 + eyeOffsetX, eyeY - 2);
+    ctx.lineTo(ex + 17 + eyeOffsetX, eyeY + 2);
+    ctx.moveTo(ex + 25 + eyeOffsetX, eyeY + 2);
+    ctx.lineTo(ex + 31 + eyeOffsetX, eyeY - 2);
+    ctx.stroke();
+  });
+}
+
+function drawBombs(now) {
+  bombs.forEach((bomb) => {
+    const elapsed = now - bomb.plantedAt;
+    const remaining = BOMB_TIMER - elapsed;
+    const urgency = clamp(1 - remaining / BOMB_TIMER, 0, 1);
+    const pulsePeriod = 240 - urgency * 170;
+    const scale = 1 + Math.sin((now / pulsePeriod) * Math.PI * 2) * (0.06 + urgency * 0.12);
+    const cx = bomb.x * TILE + TILE / 2;
+    const cy = bomb.y * TILE + TILE / 2;
+    const radius = 14 * scale;
+
+    if (urgency > 0.4) {
+      ctx.fillStyle = `rgba(255,60,40,${0.15 + urgency * 0.25})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius + 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const bombGradient = ctx.createRadialGradient(cx - 5, cy - 5, 3, cx, cy, radius);
+    bombGradient.addColorStop(0, urgency > 0.6 ? "#883333" : "#666");
+    bombGradient.addColorStop(0.6, "#161111");
+    bombGradient.addColorStop(1, "#000");
+    ctx.fillStyle = bombGradient;
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#999";
+    ctx.fillRect(cx - 5, cy - 18, 10, 8);
+    ctx.strokeStyle = "#333";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - 5, cy - 18, 10, 8);
+
+    const flicker = 2 + Math.random() * 2;
+    ctx.fillStyle = "#ffcc33";
+    ctx.beginPath();
+    ctx.moveTo(cx + 2, cy - 18);
+    ctx.lineTo(cx + 6, cy - 26);
+    ctx.lineTo(cx - 2, cy - 24);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.save();
+    ctx.shadowColor = "#ffdd66";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = "#fff7b0";
+    ctx.beginPath();
+    ctx.arc(cx + 2, cy - 24, flicker, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    ctx.beginPath();
+    ctx.arc(cx - 5, cy - 5, 5 * scale, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function drawExplosions(now) {
+  explosions.forEach((explosion) => {
+    explosion.cells.forEach((cell) => {
+      const delay = cell.dist * 40;
+      const localElapsed = now - explosion.createdAt - delay;
+      if (localElapsed < 0) return;
+      const localDuration = Math.max(EXPLOSION_DURATION - delay, 1);
+      const t = clamp(localElapsed / localDuration, 0, 1);
+      const grow = Math.sin(t * Math.PI);
+      const cx = cell.x * TILE + TILE / 2;
+      const cy = cell.y * TILE + TILE / 2;
+      const radius = TILE * 0.18 + grow * TILE * 0.46;
+
+      ctx.save();
+      ctx.globalAlpha = clamp(grow + 0.12, 0, 1);
+      const gradient = ctx.createRadialGradient(cx, cy, 2, cx, cy, radius);
+      gradient.addColorStop(0, "#fff6cc");
+      gradient.addColorStop(0.35, "#ffb347");
+      gradient.addColorStop(0.7, "#ff5c33");
+      gradient.addColorStop(1, "rgba(255,92,51,0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  });
+}
+
+function spawnSparks(cx, cy, count = 14, colors = ["#ffd27f", "#ff7043"]) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 50 + Math.random() * 100;
+    particles.push({
+      startX: cx,
+      startY: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      createdAt: performance.now(),
+      life: 300 + Math.random() * 200,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    });
+  }
+}
+
+function updateParticles(now) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    if (now - particles[i].createdAt >= particles[i].life) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function drawParticles(now) {
+  particles.forEach((p) => {
+    const elapsed = now - p.createdAt;
+    const t = clamp(elapsed / p.life, 0, 1);
+    const x = p.startX + (p.vx * elapsed) / 1000;
+    const y = p.startY + (p.vy * elapsed) / 1000;
+    ctx.fillStyle = p.color;
+    ctx.globalAlpha = 1 - t;
+    ctx.beginPath();
+    ctx.arc(x, y, 3 * (1 - t) + 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+}
+
+function setStatus(message) {
+  statusEl.textContent = `ステータス: ${message}`;
+}
+
+function placeBomb() {
+  if (!player.alive || gameOver) return;
+  if (bombs.length >= player.maxBombs) return;
+  if (bombs.some((bomb) => bomb.x === player.x && bomb.y === player.y)) return;
+
+  bombs.push({ x: player.x, y: player.y, plantedAt: performance.now(), range: player.bombRange });
+}
+
+function canWalk(x, y) {
+  if (x < 0 || x >= COLS || y < 0 || y >= ROWS) return false;
+  if (GRID[y][x] === TILE_WALL || GRID[y][x] === TILE_BLOCK) return false;
+  if (bombs.some((bomb) => bomb.x === x && bomb.y === y)) return false;
+  return true;
+}
+
+function collectItem(item) {
+  if (item.type === "fire") {
+    player.bombRange = Math.min(MAX_BOMB_RANGE, player.bombRange + 1);
+    setStatus(`ファイアアップ！ 爆発範囲 ${player.bombRange}`);
+  } else if (item.type === "bomb") {
+    player.maxBombs = Math.min(MAX_BOMBS, player.maxBombs + 1);
+    setStatus(`ボムアップ！ 同時設置数 ${player.maxBombs}`);
+  } else if (item.type === "speed") {
+    player.speedLevel = Math.min(MAX_SPEED_LEVEL, player.speedLevel + 1);
+    setStatus(`スピードアップ！ Lv.${player.speedLevel}`);
+  }
+  spawnSparks(item.x * TILE + TILE / 2, item.y * TILE + TILE / 2, 10, ["#ffffff", ITEM_COLORS[item.type]]);
+}
+
+function movePlayer(dx, dy) {
+  if (!player.alive || gameOver) return;
+  player.facing = dx === 1 ? "right" : dx === -1 ? "left" : dy === 1 ? "down" : dy === -1 ? "up" : player.facing;
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+  if (canWalk(nx, ny)) {
+    player.x = nx;
+    player.y = ny;
+    const itemIndex = items.findIndex((item) => item.x === nx && item.y === ny);
+    if (itemIndex !== -1) {
+      collectItem(items[itemIndex]);
+      items.splice(itemIndex, 1);
+    }
+  }
+}
+
+function triggerShake(magnitude) {
+  shakeStart = performance.now();
+  shakeMagnitude = magnitude;
+}
+
+function explodeBomb(bomb) {
+  const explosionCells = [{ x: bomb.x, y: bomb.y, dist: 0 }];
+  const directions = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ];
+
+  directions.forEach(([dx, dy]) => {
+    for (let step = 1; step <= bomb.range; step++) {
+      const tx = bomb.x + dx * step;
+      const ty = bomb.y + dy * step;
+      if (GRID[ty][tx] === TILE_WALL) break;
+      explosionCells.push({ x: tx, y: ty, dist: step });
+      if (GRID[ty][tx] === TILE_BLOCK) break;
+    }
+  });
+
+  explosions.push({ cells: explosionCells, createdAt: performance.now() });
+  spawnSparks(bomb.x * TILE + TILE / 2, bomb.y * TILE + TILE / 2);
+  triggerShake(7);
+  explodeEntities(explosionCells);
+}
+
+function explodeEntities(cells) {
+  const explodeSet = new Set(cells.map((c) => `${c.x},${c.y}`));
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (explodeSet.has(`${items[i].x},${items[i].y}`)) {
+      items.splice(i, 1);
+    }
+  }
+  enemies.forEach((enemy) => {
+    if (explodeSet.has(`${enemy.x},${enemy.y}`)) {
+      enemy.dead = true;
+    }
+  });
+  if (explodeSet.has(`${player.x},${player.y}`)) {
+    player.alive = false;
+    setStatus("プレイヤーが爆発でやられた！ R キーで再挑戦");
+  }
+  cells.forEach((c) => {
+    if (GRID[c.y][c.x] === TILE_BLOCK) {
+      GRID[c.y][c.x] = TILE_EMPTY;
+      const key = `${c.x},${c.y}`;
+      if (hiddenItems[key]) {
+        items.push({ x: c.x, y: c.y, type: hiddenItems[key], spawnedAt: performance.now() });
+        delete hiddenItems[key];
+      }
+    }
+  });
+}
+
+function updateBombs(now) {
+  for (let i = bombs.length - 1; i >= 0; i--) {
+    if (now - bombs[i].plantedAt >= BOMB_TIMER) {
+      explodeBomb(bombs[i]);
+      bombs.splice(i, 1);
+    }
+  }
+}
+
+function updateExplosions(now) {
+  for (let i = explosions.length - 1; i >= 0; i--) {
+    if (now - explosions[i].createdAt >= EXPLOSION_DURATION + 100) {
+      explosions.splice(i, 1);
+    }
+  }
+}
+
+function updateEnemies(now) {
+  enemies.forEach((enemy) => {
+    if (enemy.dead) return;
+    if (now - enemy.lastMovedAt < ENEMY_MOVE_INTERVAL) return;
+
+    const directions = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ];
+    const move = directions[Math.floor(Math.random() * directions.length)];
+    const nx = enemy.x + move[0];
+    const ny = enemy.y + move[1];
+    if (canWalk(nx, ny)) {
+      enemy.x = nx;
+      enemy.y = ny;
+      enemy.facing = move[0] === 1 ? "right" : move[0] === -1 ? "left" : move[1] === 1 ? "down" : "up";
+    }
+    enemy.lastMovedAt = now;
+  });
+}
+
+function updateRenderPositions() {
+  const playerEase = Math.min(0.7, PLAYER_EASE + player.speedLevel * 0.09);
+  player.px += (player.x * TILE - player.px) * playerEase;
+  player.py += (player.y * TILE - player.py) * playerEase;
+  enemies.forEach((enemy) => {
+    enemy.px += (enemy.x * TILE - enemy.px) * ENEMY_EASE;
+    enemy.py += (enemy.y * TILE - enemy.py) * ENEMY_EASE;
+  });
+}
+
+function checkGameEnd() {
+  enemies.forEach((enemy) => {
+    if (!enemy.dead && enemy.x === player.x && enemy.y === player.y) {
+      player.alive = false;
+      setStatus("敵に当たってやられた！ R キーで再挑戦");
+    }
+  });
+  if (!player.alive) {
+    gameOver = true;
+    return;
+  }
+  const aliveCount = enemies.filter((enemy) => !enemy.dead).length;
+  if (aliveCount === 0) {
+    gameOver = true;
+    gameWin = true;
+    setStatus(`ステージ ${stage} クリア！ Enter で次へ`);
+  }
+}
+
+function drawPanel(text, subtext, accentColor) {
+  ctx.fillStyle = "rgba(5, 8, 16, 0.72)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const panelW = 320;
+  const panelH = 120;
+  const panelX = (canvas.width - panelW) / 2;
+  const panelY = (canvas.height - panelH) / 2;
+
+  ctx.save();
+  ctx.shadowColor = accentColor;
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "rgba(20, 24, 38, 0.92)";
+  ctx.beginPath();
+  ctx.roundRect(panelX, panelY, panelW, panelH, 14);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = accentColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(panelX, panelY, panelW, panelH, 14);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#fff";
+  ctx.font = "bold 24px 'Segoe UI', sans-serif";
+  ctx.fillText(text, canvas.width / 2, panelY + 50);
+  ctx.font = "16px 'Segoe UI', sans-serif";
+  ctx.fillStyle = accentColor;
+  ctx.fillText(subtext, canvas.width / 2, panelY + 84);
+}
+
+function drawWinOverlay() {
+  drawPanel(`ステージ ${stage} クリア！`, "Enter キーで次のステージへ", "#5be88a");
+}
+
+function drawGameOverOverlay() {
+  drawPanel("GAME OVER", "R キーで再挑戦", "#ff5c5c");
+}
+
+function drawHUD() {
+  ctx.fillStyle = "rgba(8, 12, 22, 0.95)";
+  ctx.fillRect(0, 0, canvas.width, HUD_HEIGHT);
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, HUD_HEIGHT - 0.5);
+  ctx.lineTo(canvas.width, HUD_HEIGHT - 0.5);
+  ctx.stroke();
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#ffcc00";
+  ctx.font = "bold 18px 'Segoe UI', sans-serif";
+  ctx.fillText(`STAGE ${stage}`, 14, HUD_HEIGHT / 2);
+
+  const statY = HUD_HEIGHT / 2;
+  const stats = [
+    ["fire", player.bombRange],
+    ["bomb", player.maxBombs],
+    ["speed", player.speedLevel],
+  ];
+  let statX = 108;
+  ctx.font = "bold 13px 'Segoe UI', sans-serif";
+  stats.forEach(([type, value]) => {
+    ctx.save();
+    ctx.translate(statX, statY);
+    ctx.scale(0.65, 0.65);
+    drawItemIcon(type, 0);
+    ctx.restore();
+    ctx.fillStyle = "#fff";
+    ctx.textAlign = "left";
+    ctx.fillText(`x${value}`, statX + 13, statY + 1);
+    statX += 44;
+  });
+
+  const iconY = HUD_HEIGHT / 2;
+  let iconX = canvas.width - 14 - enemies.length * 22;
+  enemies.forEach((enemy) => {
+    ctx.beginPath();
+    ctx.arc(iconX, iconY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = enemy.dead ? "rgba(120,120,120,0.4)" : enemy.color;
+    ctx.fill();
+    if (enemy.dead) {
+      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(iconX - 4, iconY - 4);
+      ctx.lineTo(iconX + 4, iconY + 4);
+      ctx.moveTo(iconX + 4, iconY - 4);
+      ctx.lineTo(iconX - 4, iconY + 4);
+      ctx.stroke();
+    }
+    iconX += 22;
+  });
+  ctx.textBaseline = "alphabetic";
+}
+
+function gameLoop(now) {
+  if (!gameOver) {
+    updateBombs(now);
+    updateExplosions(now);
+    updateEnemies(now);
+    checkGameEnd();
+  }
+  updateParticles(now);
+  updateRenderPositions();
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  const shakeElapsed = now - shakeStart;
+  if (shakeElapsed < SHAKE_DURATION) {
+    const decay = 1 - shakeElapsed / SHAKE_DURATION;
+    const offsetX = (Math.random() - 0.5) * shakeMagnitude * decay;
+    const offsetY = (Math.random() - 0.5) * shakeMagnitude * decay;
+    ctx.translate(offsetX, offsetY);
+  }
+  ctx.translate(0, HUD_HEIGHT);
+  drawGrid();
+  drawItems(now);
+  drawExplosions(now);
+  drawParticles(now);
+  drawBombs(now);
+  drawPlayer(now);
+  drawEnemies(now);
+  ctx.restore();
+
+  drawHUD();
+
+  if (gameWin) {
+    drawWinOverlay();
+  } else if (gameOver) {
+    drawGameOverOverlay();
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+function handleInput(action) {
+  switch (action) {
+    case "up":
+      movePlayer(0, -1);
+      break;
+    case "down":
+      movePlayer(0, 1);
+      break;
+    case "left":
+      movePlayer(-1, 0);
+      break;
+    case "right":
+      movePlayer(1, 0);
+      break;
+    case "bomb":
+      placeBomb();
+      break;
+    case "next":
+      nextStage();
+      break;
+    case "restart":
+      resetState();
+      break;
+  }
+}
+
+window.addEventListener("keydown", (event) => {
+  if (gameOver && gameWin && event.key === "Enter") {
+    nextStage();
+    return;
+  }
+  if (gameOver && !gameWin && (event.key === "r" || event.key === "R")) {
+    resetState();
+    return;
+  }
+  if (gameOver) return;
+  switch (event.key) {
+    case "ArrowUp":
+      handleInput("up");
+      break;
+    case "ArrowDown":
+      handleInput("down");
+      break;
+    case "ArrowLeft":
+      handleInput("left");
+      break;
+    case "ArrowRight":
+      handleInput("right");
+      break;
+    case " ":
+    case "Spacebar":
+      handleInput("bomb");
+      break;
+  }
+});
+
+function bindPadButton(button, action) {
+  if (!button) return;
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    handleInput(action);
+  });
+}
+
+bindPadButton(upBtn, "up");
+bindPadButton(downBtn, "down");
+bindPadButton(leftBtn, "left");
+bindPadButton(rightBtn, "right");
+bindPadButton(bombBtn, "bomb");
+bindPadButton(nextBtn, "next");
+bindPadButton(restartMobileBtn, "restart");
+
+function nextStage() {
+  if (!gameWin) return;
+  stage += 1;
+  gameOver = false;
+  gameWin = false;
+  bombs.length = 0;
+  explosions.length = 0;
+  particles.length = 0;
+  items.length = 0;
+  enemies.length = 0;
+  initGrid();
+  spawnEnemies();
+  player.x = 1;
+  player.y = 1;
+  player.px = TILE;
+  player.py = TILE;
+  player.facing = "down";
+  player.alive = true;
+  setStatus(`ステージ ${stage} 開始！`);
+}
+
+function resetState() {
+  stage = 1;
+  bombs.length = 0;
+  explosions.length = 0;
+  particles.length = 0;
+  items.length = 0;
+  enemies.length = 0;
+  initGrid();
+  spawnEnemies();
+  player.x = 1;
+  player.y = 1;
+  player.px = TILE;
+  player.py = TILE;
+  player.facing = "down";
+  player.alive = true;
+  player.bombRange = BOMB_RANGE;
+  player.maxBombs = 1;
+  player.speedLevel = 0;
+  gameOver = false;
+  gameWin = false;
+  setStatus(`ステージ ${stage} 開始！`);
+}
+
+function startGame() {
+  resetState();
+  requestAnimationFrame(gameLoop);
+}
+
+startGame();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
+
+
+
+
+

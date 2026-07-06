@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>スイカゲーム</title>
+  <style>
+    :root {
+      --bg: #fef3c7;
+      --panel: #ffffff;
+      --ink: #111827;
+      --accent: #f97316;
+      --line: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background: radial-gradient(circle at top, #fff7ed 0%, var(--bg) 65%);
+      color: var(--ink);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+    .wrap {
+      width: min(96vw, 540px);
+      background: var(--panel);
+      border: 4px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+    }
+    .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .title {
+      font-weight: 800;
+      font-size: 22px;
+      color: #b45309;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .btn:active { transform: translateY(1px); }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: linear-gradient(#fffbeb, #fef9c3);
+      border: 3px solid #f59e0b;
+      border-radius: 12px;
+      touch-action: none;
+    }
+    .hint {
+      margin-top: 10px;
+      color: #92400e;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div class="title">スイカゲーム</div>
+      <div class="stat">
+        <span>Score: <span id="score">0</span></span>
+        <span>Best: <span id="best">0</span></span>
+        <button class="btn" id="restartBtn">リスタート</button>
+      </div>
+    </div>
+    <canvas id="game" width="500" height="700" aria-label="スイカゲーム"></canvas>
+    <div class="hint">左右に動かしてタップ/クリックで落下。同じ果物をくっつけると進化します。</div>
+  </div>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const restartBtn = document.getElementById("restartBtn");
+
+      const W = canvas.width;
+      const H = canvas.height;
+      const wall = 14;
+      const topLineY = 130;
+      const gravity = 2100;
+      const damping = 0.985;
+      const friction = 0.995;
+      const spawnY = 92;
+      const cooldownSec = 0.35;
+      const maxBodies = 90;
+
+      const FRUITS = [
+        { name: "さくらんぼ", r: 14, color: "#ef4444", score: 1 },
+        { name: "いちご", r: 18, color: "#f43f5e", score: 3 },
+        { name: "ぶどう", r: 22, color: "#a855f7", score: 6 },
+        { name: "みかん", r: 27, color: "#fb923c", score: 10 },
+        { name: "りんご", r: 32, color: "#ef4444", score: 15 },
+        { name: "なし", r: 38, color: "#84cc16", score: 22 },
+        { name: "もも", r: 45, color: "#f9a8d4", score: 32 },
+        { name: "パイナップル", r: 52, color: "#eab308", score: 45 },
+        { name: "メロン", r: 60, color: "#22c55e", score: 62 },
+        { name: "スイカ", r: 72, color: "#16a34a", score: 90 }
+      ];
+
+      let bodies = [];
+      let score = 0;
+      let best = Number(localStorage.getItem("suika-best") || 0);
+      let pointerX = W / 2;
+      let currentLevel = randSpawnLevel();
+      let nextLevel = randSpawnLevel();
+      let cooldown = 0;
+      let gameOver = false;
+      let overTimer = 0;
+      let lastTs = 0;
+
+      bestEl.textContent = String(best);
+
+      function randSpawnLevel() {
+        return Math.floor(Math.random() * 4);
+      }
+
+      function createFruit(level, x, y, isFresh = false) {
+        const f = FRUITS[level];
+        return {
+          id: crypto.randomUUID(),
+          level,
+          x,
+          y,
+          vx: 0,
+          vy: 0,
+          r: f.r,
+          fresh: isFresh,
+          alive: true
+        };
+      }
+
+      function addScore(v) {
+        score += v;
+        scoreEl.textContent = String(score);
+        if (score > best) {
+          best = score;
+          bestEl.textContent = String(best);
+          localStorage.setItem("suika-best", String(best));
+        }
+      }
+
+      function dropFruit() {
+        if (gameOver || cooldown > 0 || bodies.length >= maxBodies) return;
+        const r = FRUITS[currentLevel].r;
+        const x = clamp(pointerX, wall + r, W - wall - r);
+        bodies.push(createFruit(currentLevel, x, spawnY, true));
+        currentLevel = nextLevel;
+        nextLevel = randSpawnLevel();
+        cooldown = cooldownSec;
+      }
+
+      function clamp(v, min, max) {
+        return Math.max(min, Math.min(max, v));
+      }
+
+      function physics(dt) {
+        for (const b of bodies) {
+          b.vy += gravity * dt;
+          b.vx *= friction;
+          b.vy *= damping;
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+
+          if (b.x - b.r < wall) {
+            b.x = wall + b.r;
+            b.vx *= -0.25;
+          }
+          if (b.x + b.r > W - wall) {
+            b.x = W - wall - b.r;
+            b.vx *= -0.25;
+          }
+          if (b.y + b.r > H - wall) {
+            b.y = H - wall - b.r;
+            b.vy *= -0.2;
+          }
+        }
+
+        // Simple circle collision + merge handling.
+        for (let i = 0; i < bodies.length; i++) {
+          const a = bodies[i];
+          if (!a.alive) continue;
+          for (let j = i + 1; j < bodies.length; j++) {
+            const b = bodies[j];
+            if (!b.alive) continue;
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const rr = a.r + b.r;
+            const distSq = dx * dx + dy * dy;
+            if (distSq >= rr * rr) continue;
+
+            const dist = Math.sqrt(distSq) || 0.0001;
+            const nx = dx / dist;
+            const ny = dy / dist;
+            const overlap = rr - dist;
+            const push = overlap * 0.5;
+            a.x -= nx * push;
+            a.y -= ny * push;
+            b.x += nx * push;
+            b.y += ny * push;
+
+            const relVx = b.vx - a.vx;
+            const relVy = b.vy - a.vy;
+            const sepSpeed = relVx * nx + relVy * ny;
+            if (sepSpeed < 0) {
+              const impulse = -sepSpeed * 0.5;
+              a.vx -= impulse * nx;
+              a.vy -= impulse * ny;
+              b.vx += impulse * nx;
+              b.vy += impulse * ny;
+            }
+
+            if (a.level === b.level && !a.fresh && !b.fresh) {
+              const nxLevel = Math.min(a.level + 1, FRUITS.length - 1);
+              const mx = (a.x + b.x) * 0.5;
+              const my = (a.y + b.y) * 0.5;
+              a.alive = false;
+              b.alive = false;
+              bodies.push(createFruit(nxLevel, mx, my, true));
+              addScore(FRUITS[nxLevel].score);
+            }
+          }
+        }
+
+        bodies = bodies.filter((b) => b.alive);
+        for (const b of bodies) b.fresh = false;
+      }
+
+      function updateGameOver(dt) {
+        let touchingLine = false;
+        for (const b of bodies) {
+          if (b.y - b.r < topLineY) {
+            touchingLine = true;
+            break;
+          }
+        }
+        if (touchingLine) overTimer += dt;
+        else overTimer = Math.max(0, overTimer - dt * 2);
+        if (overTimer > 1.2) gameOver = true;
+      }
+
+      function drawFruit(level, x, y) {
+        const f = FRUITS[level];
+        ctx.beginPath();
+        ctx.arc(x, y, f.r, 0, Math.PI * 2);
+        ctx.fillStyle = f.color;
+        ctx.fill();
+        ctx.lineWidth = 2.2;
+        ctx.strokeStyle = "rgba(0,0,0,0.18)";
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(x - f.r * 0.28, y - f.r * 0.34, f.r * 0.3, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.35)";
+        ctx.fill();
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        ctx.fillStyle = "#fefce8";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = "rgba(245, 158, 11, 0.16)";
+        ctx.fillRect(0, 0, W, topLineY);
+        ctx.beginPath();
+        ctx.moveTo(wall, topLineY);
+        ctx.lineTo(W - wall, topLineY);
+        ctx.strokeStyle = "#f97316";
+        ctx.setLineDash([8, 8]);
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.lineWidth = wall * 2;
+        ctx.strokeStyle = "#f59e0b";
+        ctx.strokeRect(wall, wall, W - wall * 2, H - wall * 2);
+
+        for (const b of bodies) {
+          drawFruit(b.level, b.x, b.y);
+        }
+
+        if (!gameOver) {
+          const ghostR = FRUITS[currentLevel].r;
+          const gx = clamp(pointerX, wall + ghostR, W - wall - ghostR);
+          ctx.globalAlpha = 0.4;
+          drawFruit(currentLevel, gx, spawnY);
+          ctx.globalAlpha = 1;
+
+          ctx.fillStyle = "#7c2d12";
+          ctx.font = "bold 15px sans-serif";
+          ctx.fillText("Next", W - 78, 34);
+          ctx.save();
+          ctx.translate(W - 45, 65);
+          const n = FRUITS[nextLevel];
+          ctx.beginPath();
+          ctx.arc(0, 0, n.r * 0.48, 0, Math.PI * 2);
+          ctx.fillStyle = n.color;
+          ctx.fill();
+          ctx.strokeStyle = "rgba(0,0,0,0.25)";
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        if (gameOver) {
+          ctx.fillStyle = "rgba(0,0,0,0.4)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#fff";
+          ctx.textAlign = "center";
+          ctx.font = "bold 46px sans-serif";
+          ctx.fillText("GAME OVER", W / 2, H / 2 - 24);
+          ctx.font = "bold 24px sans-serif";
+          ctx.fillText(`Score: ${score}`, W / 2, H / 2 + 20);
+          ctx.font = "18px sans-serif";
+          ctx.fillText("リスタートで再挑戦", W / 2, H / 2 + 56);
+          ctx.textAlign = "start";
+        }
+      }
+
+      function frame(ts) {
+        if (!lastTs) lastTs = ts;
+        let dt = (ts - lastTs) / 1000;
+        lastTs = ts;
+        dt = Math.min(dt, 0.033);
+
+        if (!gameOver) {
+          cooldown = Math.max(0, cooldown - dt);
+          const step = 1 / 120;
+          let acc = dt;
+          while (acc > 0) {
+            const tick = Math.min(step, acc);
+            physics(tick);
+            updateGameOver(tick);
+            acc -= tick;
+          }
+        }
+
+        draw();
+        requestAnimationFrame(frame);
+      }
+
+      function setPointer(clientX) {
+        const rect = canvas.getBoundingClientRect();
+        const x = ((clientX - rect.left) / rect.width) * W;
+        pointerX = clamp(x, wall + 8, W - wall - 8);
+      }
+
+      function resetGame() {
+        bodies = [];
+        score = 0;
+        scoreEl.textContent = "0";
+        pointerX = W / 2;
+        currentLevel = randSpawnLevel();
+        nextLevel = randSpawnLevel();
+        cooldown = 0;
+        gameOver = false;
+        overTimer = 0;
+      }
+
+      canvas.addEventListener("mousemove", (e) => setPointer(e.clientX));
+      canvas.addEventListener("click", dropFruit);
+      canvas.addEventListener("touchmove", (e) => {
+        if (!e.touches[0]) return;
+        setPointer(e.touches[0].clientX);
+      }, { passive: true });
+      canvas.addEventListener("touchstart", (e) => {
+        if (!e.touches[0]) return;
+        setPointer(e.touches[0].clientX);
+        dropFruit();
+      }, { passive: true });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.code === "ArrowLeft") pointerX -= 24;
+        if (e.code === "ArrowRight") pointerX += 24;
+        if (e.code === "Space" || e.code === "Enter") {
+          e.preventDefault();
+          dropFruit();
+        }
+      });
+
+      restartBtn.addEventListener("click", resetGame);
+
+      resetGame();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
