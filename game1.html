@@ -4,32 +4,98 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>スイカゲーム</title>
-  <style>
+    <style>
     :root {
-      --bg: #fef3c7;
-      --panel: #ffffff;
-      --ink: #111827;
+      color-scheme: light;
+      --bg-top: #fff8e8;
+      --bg-bottom: #f8d48a;
+      --panel: rgba(255, 255, 255, 0.9);
+      --ink: #1f2937;
+      --muted: #6b7280;
       --accent: #f97316;
+      --accent-strong: #ea580c;
       --line: #f59e0b;
+      --line-soft: rgba(245, 158, 11, 0.28);
     }
     * { box-sizing: border-box; }
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.75), transparent 32%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+    }
     body {
       margin: 0;
-      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-      background: radial-gradient(circle at top, #fff7ed 0%, var(--bg) 65%);
-      color: var(--ink);
       min-height: 100vh;
+      min-height: 100dvh;
       display: grid;
       place-items: center;
       padding: 16px;
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(255, 255, 255, 0.84), transparent 30%),
+        radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.12), transparent 22%),
+        linear-gradient(180deg, var(--bg-top), var(--bg-bottom));
+      color: var(--ink);
+      overflow-x: hidden;
     }
     .wrap {
-      width: min(96vw, 540px);
-      background: var(--panel);
-      border: 4px solid var(--line);
+      width: min(100%, 920px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), var(--panel));
+      border: 1px solid rgba(245, 158, 11, 0.42);
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow:
+        0 24px 60px rgba(120, 74, 14, 0.18),
+        0 2px 0 rgba(255, 255, 255, 0.6) inset;
+      backdrop-filter: blur(10px);
+    }
+    .content {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 210px;
+      gap: 16px;
+      align-items: start;
+    }
+    .board { min-width: 0; }
+    .side {
+      border: 1px solid rgba(251, 191, 36, 0.45);
       border-radius: 16px;
+      background: linear-gradient(180deg, #fffdf7 0%, #fff5df 100%);
       padding: 14px;
-      box-shadow: 0 14px 32px rgba(0, 0, 0, 0.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.85),
+        0 10px 22px rgba(120, 74, 14, 0.08);
+    }
+    .side h2 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #b45309;
+    }
+    .fruit-list {
+      display: grid;
+      gap: 5px;
+    }
+    .fruit-item {
+      display: grid;
+      grid-template-columns: 20px 1fr;
+      gap: 5px;
+      align-items: center;
+      font-size: 13px;
+      line-height: 1.3;
+      color: #78350f;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.55);
+    }
+    .fruit-thumb {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      display: block;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgba(0,0,0,0.08);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.10);
     }
     .head {
       display: flex;
@@ -40,25 +106,29 @@
     }
     .title {
       font-weight: 800;
-      font-size: 22px;
+      font-size: clamp(20px, 3.2vw, 24px);
+      letter-spacing: 0.02em;
       color: #b45309;
     }
     .stat {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px 12px;
       font-weight: 700;
       flex-wrap: wrap;
+      color: var(--muted);
     }
     .btn {
       border: none;
-      background: var(--accent);
+      background: linear-gradient(180deg, #fb923c, var(--accent-strong));
       color: #fff;
       font-weight: 700;
-      border-radius: 10px;
-      padding: 8px 12px;
+      border-radius: 999px;
+      padding: 9px 14px;
       cursor: pointer;
+      box-shadow: 0 8px 16px rgba(249, 115, 22, 0.22);
     }
+    .btn:hover { filter: brightness(1.03); }
     .btn:active { transform: translateY(1px); }
     canvas {
       display: block;
@@ -66,14 +136,46 @@
       height: auto;
       background: linear-gradient(#fffbeb, #fef9c3);
       border: 3px solid #f59e0b;
-      border-radius: 12px;
+      border-radius: 14px;
       touch-action: none;
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.35) inset,
+        0 10px 20px rgba(180, 120, 20, 0.12);
     }
     .hint {
       margin-top: 10px;
       color: #92400e;
       font-size: 14px;
       line-height: 1.6;
+    }
+    @media (max-width: 760px) {
+      body { padding: 10px; }
+      .wrap {
+        padding: 14px;
+        border-radius: 18px;
+      }
+      .content {
+        grid-template-columns: 1fr;
+      }
+      .head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .stat {
+        width: 100%;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .btn {
+        width: 100%;
+        padding: 10px 12px;
+      }
+      .side {
+        order: 2;
+      }
+      .hint {
+        font-size: 13px;
+      }
     }
   </style>
 </head>
@@ -87,8 +189,16 @@
         <button class="btn" id="restartBtn">リスタート</button>
       </div>
     </div>
-    <canvas id="game" width="500" height="700" aria-label="スイカゲーム"></canvas>
-    <div class="hint">左右に動かしてタップ/クリックで落下。同じ果物をくっつけると進化します。</div>
+    <div class="content">
+      <div class="board">
+        <canvas id="game" width="500" height="480" aria-label="スイカゲーム"></canvas>
+        <div class="hint">左右に動かしてタップ/クリックで落下。同じ果物をくっつけると進化します。</div>
+      </div>
+      <aside class="side" aria-label="果物の説明">
+        <h2>果物の説明</h2>
+        <div class="fruit-list" id="fruitList"></div>
+      </aside>
+    </div>
   </div>
 
   <script>
@@ -102,17 +212,17 @@
       const W = canvas.width;
       const H = canvas.height;
       const wall = 14;
-      const topLineY = 130;
+      const topLineY = 84;
       const gravity = 2100;
-      const damping = 0.985;
-      const friction = 0.995;
-      const spawnY = 92;
+      const damping = 0.966;
+      const friction = 0.983;
+      const spawnY = 64;
       const cooldownSec = 0.35;
       const maxBodies = 90;
 
       const FRUITS = [
-        { name: "さくらんぼ", r: 14, color: "#ef4444", score: 1 },
-        { name: "いちご", r: 18, color: "#f43f5e", score: 3 },
+        { name: "いちご", r: 14, color: "#ef4444", score: 1 },
+        { name: "さくらんぼ", r: 18, color: "#f43f5e", score: 3 },
         { name: "ぶどう", r: 22, color: "#a855f7", score: 6 },
         { name: "みかん", r: 27, color: "#fb923c", score: 10 },
         { name: "りんご", r: 32, color: "#ef4444", score: 15 },
@@ -122,6 +232,388 @@
         { name: "メロン", r: 60, color: "#22c55e", score: 62 },
         { name: "スイカ", r: 72, color: "#16a34a", score: 90 }
       ];
+
+      const FRUIT_IMAGE_SOURCES = [
+        "assets/fruits/strawberry.png",
+        "assets/fruits/cherry.png",
+        "assets/fruits/grape.png",
+        "assets/fruits/orange.png",
+        "assets/fruits/apple.png",
+        "assets/fruits/pear.png",
+        "assets/fruits/peach.png",
+        "assets/fruits/pineapple.png",
+        "assets/fruits/melon.png",
+        "assets/fruits/watermelon.png"
+      ];
+
+      const fruitSprites = FRUIT_IMAGE_SOURCES.map((src) => makeFruitSprite(src));
+
+      function escapeXml(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function shade(hex, pct) {
+        const raw = hex.replace("#", "");
+        const num = parseInt(raw, 16);
+        const r = (num >> 16) & 255;
+        const g = (num >> 8) & 255;
+        const b = num & 255;
+        const t = pct < 0 ? 0 : 255;
+        const p = Math.abs(pct);
+        const rr = Math.round((t - r) * p + r);
+        const gg = Math.round((t - g) * p + g);
+        const bb = Math.round((t - b) * p + b);
+        return `rgb(${rr},${gg},${bb})`;
+      }
+
+      function makeFruitSvg(level) {
+        const f = FRUITS[level];
+        const view = 240;
+
+        const svg = (() => {
+          switch (level) {
+            case 0:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="berry" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#ffb4c0" />
+                      <stop offset="45%" stop-color="#fb7185" />
+                      <stop offset="100%" stop-color="#be123c" />
+                    </radialGradient>
+                    <radialGradient id="shine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M120 42 C166 50, 190 87, 185 132 C179 180, 146 209, 120 209 C94 209, 61 180, 55 132 C50 87, 74 50, 120 42 Z" fill="url(#berry)" />
+                    <ellipse cx="96" cy="93" rx="28" ry="22" fill="url(#shine)" opacity="0.84" />
+                    <path d="M120 42 C111 29, 101 24, 89 22" stroke="#166534" stroke-width="8" stroke-linecap="round" fill="none" />
+                    <path d="M120 42 C129 29, 139 24, 151 22" stroke="#166534" stroke-width="8" stroke-linecap="round" fill="none" />
+                    <path d="M86 28 C74 24, 64 29, 58 40 C70 43, 79 40, 86 28 Z" fill="#22c55e" />
+                    <path d="M154 28 C166 24, 176 29, 182 40 C170 43, 161 40, 154 28 Z" fill="#22c55e" />
+                    <path d="M101 27 C96 20, 95 15, 97 10" stroke="#7c4a1e" stroke-width="5.5" stroke-linecap="round" fill="none" />
+                    <path d="M120 25 C118 17, 118 11, 121 6" stroke="#7c4a1e" stroke-width="5.5" stroke-linecap="round" fill="none" />
+                    <path d="M139 27 C144 20, 145 15, 143 10" stroke="#7c4a1e" stroke-width="5.5" stroke-linecap="round" fill="none" />
+                    <g fill="#fef08a" opacity="0.95">
+                      <ellipse cx="105" cy="82" rx="3.5" ry="5" transform="rotate(-18 105 82)" />
+                      <ellipse cx="126" cy="77" rx="3.5" ry="5" transform="rotate(10 126 77)" />
+                      <ellipse cx="144" cy="90" rx="3.5" ry="5" transform="rotate(22 144 90)" />
+                      <ellipse cx="95" cy="107" rx="3.5" ry="5" transform="rotate(-8 95 107)" />
+                      <ellipse cx="118" cy="101" rx="3.5" ry="5" transform="rotate(15 118 101)" />
+                      <ellipse cx="139" cy="106" rx="3.5" ry="5" transform="rotate(-16 139 106)" />
+                      <ellipse cx="108" cy="130" rx="3.5" ry="5" transform="rotate(18 108 130)" />
+                      <ellipse cx="129" cy="126" rx="3.5" ry="5" transform="rotate(-10 129 126)" />
+                      <ellipse cx="149" cy="136" rx="3.5" ry="5" transform="rotate(24 149 136)" />
+                    </g>
+                  </g>
+                </svg>
+              `;
+            case 1:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="cherry" cx="35%" cy="28%" r="70%">
+                      <stop offset="0%" stop-color="#ff9ab0" />
+                      <stop offset="48%" stop-color="#fb7185" />
+                      <stop offset="100%" stop-color="#b91c1c" />
+                    </radialGradient>
+                    <radialGradient id="cherryShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M95 150 C73 124, 64 94, 70 70 C78 41, 102 27, 114 27 C126 27, 144 40, 146 63 C147 85, 135 119, 116 146 Z" fill="url(#cherry)" />
+                    <path d="M145 150 C123 123, 115 93, 121 69 C129 40, 154 27, 166 27 C178 27, 196 40, 198 63 C199 85, 187 118, 168 146 Z" fill="url(#cherry)" />
+                    <ellipse cx="98" cy="83" rx="16" ry="20" fill="url(#cherryShine)" opacity="0.75" />
+                    <ellipse cx="148" cy="83" rx="16" ry="20" fill="url(#cherryShine)" opacity="0.75" />
+                    <path d="M115 30 C112 22, 108 17, 100 12" stroke="#7c4a1e" stroke-width="6" stroke-linecap="round" fill="none" />
+                    <path d="M161 30 C163 21, 168 16, 176 12" stroke="#7c4a1e" stroke-width="6" stroke-linecap="round" fill="none" />
+                    <path d="M100 12 C114 6, 126 6, 136 14" stroke="#166534" stroke-width="6" stroke-linecap="round" fill="none" />
+                    <path d="M136 14 C148 6, 161 6, 174 12" stroke="#166534" stroke-width="6" stroke-linecap="round" fill="none" />
+                    <path d="M140 20 C148 16, 156 16, 165 19" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none" />
+                    <path d="M94 20 C104 16, 112 16, 121 19" stroke="#22c55e" stroke-width="8" stroke-linecap="round" fill="none" />
+                  </g>
+                </svg>
+              `;
+            case 2:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="grape" cx="34%" cy="28%" r="72%">
+                      <stop offset="0%" stop-color="#d8b4fe" />
+                      <stop offset="50%" stop-color="#a855f7" />
+                      <stop offset="100%" stop-color="#6b21a8" />
+                    </radialGradient>
+                    <radialGradient id="grapeShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.95" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M110 40 C120 24, 130 20, 143 18" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M140 20 C154 14, 168 18, 178 30 C164 34, 153 33, 140 20 Z" fill="#22c55e" />
+                    <path d="M115 46 L98 70 L122 74 Z" fill="#16a34a" opacity="0.9" />
+                    <path d="M132 40 L119 66 L145 68 Z" fill="#16a34a" opacity="0.9" />
+                    <path d="M148 46 L138 72 L160 74 Z" fill="#16a34a" opacity="0.9" />
+                    <path d="M90 74 C112 56, 132 54, 146 61 C158 42, 180 39, 196 52 C191 77, 176 93, 154 98 C150 116, 134 132, 112 136 C93 133, 77 119, 74 98 C76 86, 81 79, 90 74 Z" fill="#5b21b6" opacity="0.35" />
+                    <g>
+                      <circle cx="102" cy="95" r="20" fill="url(#grape)" />
+                      <circle cx="124" cy="88" r="21" fill="url(#grape)" />
+                      <circle cx="145" cy="96" r="20" fill="url(#grape)" />
+                      <circle cx="93" cy="118" r="19" fill="url(#grape)" />
+                      <circle cx="114" cy="112" r="21" fill="url(#grape)" />
+                      <circle cx="137" cy="118" r="20" fill="url(#grape)" />
+                      <circle cx="158" cy="110" r="19" fill="url(#grape)" />
+                      <ellipse cx="95" cy="86" rx="8" ry="6" fill="url(#grapeShine)" opacity="0.6" />
+                    </g>
+                  </g>
+                </svg>
+              `;
+            case 3:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="orange" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#ffd28a" />
+                      <stop offset="48%" stop-color="#fb923c" />
+                      <stop offset="100%" stop-color="#c2410c" />
+                    </radialGradient>
+                    <radialGradient id="orangeShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <circle cx="120" cy="122" r="70" fill="url(#orange)" />
+                    <circle cx="94" cy="96" r="24" fill="url(#orangeShine)" opacity="0.75" />
+                    <path d="M118 47 C118 37, 121 30, 127 24" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M127 24 C139 18, 151 20, 160 30 C146 34, 136 34, 127 24 Z" fill="#65a30d" opacity="0.95" />
+                    <g opacity="0.22" stroke="#fff7ed" stroke-width="2.1">
+                      <path d="M75 76 C96 60, 137 55, 167 72" />
+                      <path d="M62 103 C92 90, 142 90, 182 109" />
+                      <path d="M66 131 C98 120, 143 121, 176 138" />
+                      <path d="M82 160 C106 151, 141 151, 165 163" />
+                    </g>
+                  </g>
+                </svg>
+              `;
+            case 4:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="apple" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#ffb4b4" />
+                      <stop offset="48%" stop-color="#ef4444" />
+                      <stop offset="100%" stop-color="#991b1b" />
+                    </radialGradient>
+                    <radialGradient id="appleShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M120 46 C92 42, 71 60, 64 88 C57 116, 62 146, 82 170 C94 184, 109 194, 120 194 C131 194, 146 184, 158 170 C178 146, 183 116, 176 88 C169 60, 148 42, 120 46 Z" fill="url(#apple)" />
+                    <ellipse cx="96" cy="92" rx="28" ry="22" fill="url(#appleShine)" opacity="0.82" />
+                    <path d="M120 43 C118 34, 118 28, 120 20" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M123 22 C136 18, 146 20, 154 29 C142 33, 132 32, 123 22 Z" fill="#65a30d" opacity="0.95" />
+                    <path d="M112 53 C108 78, 108 100, 114 124" stroke="#ffffff" stroke-opacity="0.14" stroke-width="5" stroke-linecap="round" fill="none" />
+                  </g>
+                </svg>
+              `;
+            case 5:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="pear" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#e7f7a8" />
+                      <stop offset="50%" stop-color="#a3e635" />
+                      <stop offset="100%" stop-color="#4d7c0f" />
+                    </radialGradient>
+                    <radialGradient id="pearShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M120 52 C105 52, 97 62, 96 74 C78 87, 69 109, 74 132 C81 161, 100 184, 120 188 C140 184, 159 161, 166 132 C171 109, 162 87, 144 74 C143 62, 135 52, 120 52 Z" fill="url(#pear)" />
+                    <ellipse cx="96" cy="96" rx="26" ry="20" fill="url(#pearShine)" opacity="0.8" />
+                    <path d="M118 50 C118 39, 121 32, 127 25" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M127 25 C137 19, 145 19, 154 28 C141 32, 133 31, 127 25 Z" fill="#15803d" opacity="0.95" />
+                  </g>
+                </svg>
+              `;
+            case 6:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="peach" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#ffd7c2" />
+                      <stop offset="52%" stop-color="#f9a8d4" />
+                      <stop offset="100%" stop-color="#fb7185" />
+                    </radialGradient>
+                    <radialGradient id="peachShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.94" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M120 54 C93 58, 75 78, 71 108 C68 136, 79 168, 102 184 C112 191, 120 194, 120 194 C120 194, 128 191, 138 184 C161 168, 172 136, 169 108 C165 78, 147 58, 120 54 Z" fill="url(#peach)" />
+                    <ellipse cx="97" cy="94" rx="26" ry="21" fill="url(#peachShine)" opacity="0.84" />
+                    <path d="M120 54 C118 76, 118 111, 120 194" stroke="#ffffff" stroke-opacity="0.16" stroke-width="5" stroke-linecap="round" fill="none" />
+                    <path d="M120 50 C117 39, 117 32, 120 24" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M120 24 C132 18, 142 20, 151 29 C138 33, 129 32, 120 24 Z" fill="#22c55e" opacity="0.95" />
+                  </g>
+                </svg>
+              `;
+            case 7:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="pineBody" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#fff1a8" />
+                      <stop offset="54%" stop-color="#eab308" />
+                      <stop offset="100%" stop-color="#a16207" />
+                    </radialGradient>
+                    <radialGradient id="pineShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <path d="M120 58 C96 64, 78 83, 76 109 C74 134, 86 159, 104 177 C113 186, 120 191, 120 191 C120 191, 127 186, 136 177 C154 159, 166 134, 164 109 C162 83, 144 64, 120 58 Z" fill="url(#pineBody)" />
+                    <ellipse cx="97" cy="95" rx="25" ry="19" fill="url(#pineShine)" opacity="0.8" />
+                    <g stroke="#9a3412" stroke-width="3" opacity="0.34" fill="none">
+                      <path d="M96 84 L145 132" />
+                      <path d="M103 74 L152 121" />
+                      <path d="M88 101 L137 149" />
+                      <path d="M92 125 L141 173" />
+                      <path d="M80 114 L129 162" />
+                      <path d="M108 64 L157 112" />
+                    </g>
+                    <g stroke="#9a3412" stroke-width="3" opacity="0.34" fill="none">
+                      <path d="M89 91 L155 139" />
+                      <path d="M86 114 L150 162" />
+                      <path d="M97 68 L164 116" />
+                    </g>
+                    <path d="M120 28 C108 17, 98 12, 85 10 C95 26, 101 37, 120 44" fill="#22c55e" />
+                    <path d="M120 28 C132 17, 142 12, 155 10 C145 26, 139 37, 120 44" fill="#16a34a" />
+                    <path d="M120 18 C112 9, 104 5, 94 4 C102 16, 108 23, 120 28" fill="#4ade80" />
+                    <path d="M120 18 C128 9, 136 5, 146 4 C138 16, 132 23, 120 28" fill="#4ade80" />
+                  </g>
+                </svg>
+              `;
+            case 8:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="melon" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#b7f7cb" />
+                      <stop offset="52%" stop-color="#22c55e" />
+                      <stop offset="100%" stop-color="#166534" />
+                    </radialGradient>
+                    <radialGradient id="melonShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <circle cx="120" cy="122" r="70" fill="url(#melon)" />
+                    <ellipse cx="95" cy="94" rx="28" ry="22" fill="url(#melonShine)" opacity="0.74" />
+                    <path d="M118 48 C118 38, 121 30, 127 24" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M127 24 C140 18, 151 20, 160 29 C146 33, 136 32, 127 24 Z" fill="#65a30d" opacity="0.95" />
+                    <g opacity="0.38" stroke="#bbf7d0" stroke-width="2.5" fill="none">
+                      <path d="M58 100 C79 83, 108 74, 143 77 C162 79, 179 85, 192 95" />
+                      <path d="M49 124 C74 110, 104 103, 140 105 C163 106, 181 112, 194 121" />
+                      <path d="M55 147 C81 136, 111 131, 144 133 C166 135, 181 140, 190 147" />
+                      <path d="M69 168 C92 159, 121 156, 150 158 C169 159, 182 163, 186 169" />
+                    </g>
+                  </g>
+                </svg>
+              `;
+            case 9:
+            default:
+              return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${view} ${view}">
+                  <defs>
+                    <radialGradient id="watermelon" cx="32%" cy="26%" r="72%">
+                      <stop offset="0%" stop-color="#6ee7b7" />
+                      <stop offset="46%" stop-color="#22c55e" />
+                      <stop offset="100%" stop-color="#166534" />
+                    </radialGradient>
+                    <radialGradient id="waterShine" cx="30%" cy="24%" r="28%">
+                      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+                    </radialGradient>
+                    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+                      <feDropShadow dx="0" dy="10" stdDeviation="7" flood-color="#000000" flood-opacity="0.22" />
+                    </filter>
+                  </defs>
+                  <g filter="url(#shadow)">
+                    <circle cx="120" cy="122" r="70" fill="url(#watermelon)" />
+                    <ellipse cx="94" cy="94" rx="28" ry="22" fill="url(#waterShine)" opacity="0.72" />
+                    <path d="M118 48 C118 38, 121 30, 127 24" stroke="#7c4a1e" stroke-width="7" stroke-linecap="round" fill="none" />
+                    <path d="M127 24 C140 18, 151 20, 160 29 C146 33, 136 32, 127 24 Z" fill="#65a30d" opacity="0.95" />
+                    <g opacity="0.65" stroke="#14532d" stroke-width="6" fill="none">
+                      <path d="M70 72 C92 60, 112 56, 130 57" />
+                      <path d="M60 102 C88 94, 116 92, 144 96" />
+                      <path d="M57 134 C84 126, 114 124, 152 129" />
+                      <path d="M67 166 C92 160, 123 160, 157 165" />
+                    </g>
+                    <g fill="#86efac" opacity="0.12">
+                      <circle cx="90" cy="86" r="4" />
+                      <circle cx="126" cy="76" r="4" />
+                      <circle cx="150" cy="106" r="4" />
+                      <circle cx="98" cy="120" r="4" />
+                      <circle cx="134" cy="136" r="4" />
+                    </g>
+                  </g>
+                </svg>
+              `;
+          }
+        })();
+
+        return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+      }
+
+      function makeFruitSprite(src) {
+        const img = new Image();
+        img.src = src;
+        return img;
+      }
 
       let bodies = [];
       let score = 0;
@@ -135,6 +627,13 @@
       let lastTs = 0;
 
       bestEl.textContent = String(best);
+      const fruitListEl = document.getElementById("fruitList");
+      fruitListEl.innerHTML = FRUITS.map((fruit, index) => `
+        <div class="fruit-item">
+          <img class="fruit-thumb" src="${FRUIT_IMAGE_SOURCES[index]}" alt="${fruit.name}">
+          <span>${fruit.name}</span>
+        </div>
+      `).join("");
 
       function randSpawnLevel() {
         return Math.floor(Math.random() * 4);
@@ -149,6 +648,9 @@
           y,
           vx: 0,
           vy: 0,
+          angle: Math.random() * Math.PI * 2,
+          spin: 0,
+          rotated: 0,
           r: f.r,
           fresh: isFresh,
           alive: true
@@ -187,17 +689,40 @@
           b.x += b.vx * dt;
           b.y += b.vy * dt;
 
+          const onFloor = b.y + b.r >= H - wall - 0.5;
+          const lowMotion = Math.abs(b.vx) < 10 && Math.abs(b.vy) < 18;
+
+          const spinCap = Math.PI * 2 * 1;
+          const angleStep = b.spin * dt * 0.52;
+          b.angle += angleStep;
+          b.rotated += Math.abs(angleStep);
+          if (b.rotated >= spinCap) {
+            b.rotated = spinCap;
+            b.spin = 0;
+          } else {
+            b.spin *= onFloor ? 0.83 : 0.955;
+            if (onFloor && lowMotion) {
+              b.spin *= 0.30;
+            }
+            if (Math.abs(b.spin) < 0.04 && lowMotion) {
+              b.spin = 0;
+            }
+          }
+
           if (b.x - b.r < wall) {
             b.x = wall + b.r;
             b.vx *= -0.25;
+            b.spin += b.vy * 0.0025;
           }
           if (b.x + b.r > W - wall) {
             b.x = W - wall - b.r;
             b.vx *= -0.25;
+            b.spin += b.vy * 0.0025;
           }
           if (b.y + b.r > H - wall) {
             b.y = H - wall - b.r;
             b.vy *= -0.2;
+            b.spin += b.vx * 0.003;
           }
         }
 
@@ -227,6 +752,9 @@
             const relVx = b.vx - a.vx;
             const relVy = b.vy - a.vy;
             const sepSpeed = relVx * nx + relVy * ny;
+            const tx = -ny;
+            const ty = nx;
+            const tangSpeed = relVx * tx + relVy * ty;
             if (sepSpeed < 0) {
               const impulse = -sepSpeed * 0.5;
               a.vx -= impulse * nx;
@@ -234,6 +762,9 @@
               b.vx += impulse * nx;
               b.vy += impulse * ny;
             }
+            const rollImpulse = clamp(tangSpeed * 0.013, -0.75, 0.75);
+            a.spin -= rollImpulse * 0.35;
+            b.spin += rollImpulse * 0.28;
 
             if (a.level === b.level && !a.fresh && !b.fresh) {
               const nxLevel = Math.min(a.level + 1, FRUITS.length - 1);
@@ -264,20 +795,22 @@
         if (overTimer > 1.2) gameOver = true;
       }
 
-      function drawFruit(level, x, y) {
+      function drawFruit(level, x, y, angle = 0) {
         const f = FRUITS[level];
-        ctx.beginPath();
-        ctx.arc(x, y, f.r, 0, Math.PI * 2);
-        ctx.fillStyle = f.color;
-        ctx.fill();
-        ctx.lineWidth = 2.2;
-        ctx.strokeStyle = "rgba(0,0,0,0.18)";
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(x - f.r * 0.28, y - f.r * 0.34, f.r * 0.3, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.35)";
-        ctx.fill();
+        const img = fruitSprites[level];
+        const size = f.r * 2.15;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        if (img && img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, -size / 2, -size / 2, size, size);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0, 0, f.r, 0, Math.PI * 2);
+          ctx.fillStyle = f.color;
+          ctx.fill();
+        }
+        ctx.restore();
       }
 
       function draw() {
@@ -302,14 +835,14 @@
         ctx.strokeRect(wall, wall, W - wall * 2, H - wall * 2);
 
         for (const b of bodies) {
-          drawFruit(b.level, b.x, b.y);
+          drawFruit(b.level, b.x, b.y, b.angle);
         }
 
         if (!gameOver) {
           const ghostR = FRUITS[currentLevel].r;
           const gx = clamp(pointerX, wall + ghostR, W - wall - ghostR);
           ctx.globalAlpha = 0.4;
-          drawFruit(currentLevel, gx, spawnY);
+          drawFruit(currentLevel, gx, spawnY, 0);
           ctx.globalAlpha = 1;
 
           ctx.fillStyle = "#7c2d12";
@@ -317,13 +850,16 @@
           ctx.fillText("Next", W - 78, 34);
           ctx.save();
           ctx.translate(W - 45, 65);
-          const n = FRUITS[nextLevel];
-          ctx.beginPath();
-          ctx.arc(0, 0, n.r * 0.48, 0, Math.PI * 2);
-          ctx.fillStyle = n.color;
-          ctx.fill();
-          ctx.strokeStyle = "rgba(0,0,0,0.25)";
-          ctx.stroke();
+          const n = fruitSprites[nextLevel];
+          const previewSize = FRUITS[nextLevel].r * 0.95 * 2;
+          if (n && n.complete && n.naturalWidth > 0) {
+            ctx.drawImage(n, -previewSize / 2, -previewSize / 2, previewSize, previewSize);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, FRUITS[nextLevel].r * 0.48, 0, Math.PI * 2);
+            ctx.fillStyle = FRUITS[nextLevel].color;
+            ctx.fill();
+          }
           ctx.restore();
         }
 
@@ -411,3 +947,33 @@
   </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
