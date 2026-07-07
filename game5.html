@@ -148,6 +148,89 @@
       gap: 12px;
     }
 
+    .menu-toggle {
+      display: grid;
+      gap: 4px;
+      place-items: center;
+      width: 40px;
+      height: 40px;
+      padding: 8px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.03);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .menu-toggle span {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+    }
+
+    .menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 5, 11, 0.6);
+      display: flex;
+      justify-content: flex-end;
+      z-index: 50;
+    }
+
+    .menu-overlay[hidden] {
+      display: none;
+    }
+
+    .menu-panel {
+      width: min(320px, 86vw);
+      height: 100%;
+      background: linear-gradient(180deg, rgba(10, 16, 30, 0.98), rgba(5, 8, 16, 0.98));
+      border-left: 1px solid var(--line);
+      padding: 16px;
+      overflow-y: auto;
+      box-shadow: -18px 0 40px rgba(0, 0, 0, 0.4);
+      display: grid;
+      gap: 16px;
+      align-content: start;
+      animation: menu-slide-in 0.2s ease;
+    }
+
+    @keyframes menu-slide-in {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .menu-header h2 {
+      margin: 0;
+      font-size: 16px;
+      color: #d9e7ff;
+    }
+
+    .menu-panel h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+      color: #d9e7ff;
+    }
+
+    .menu-close {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
     .panel {
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -228,10 +311,6 @@
       .layout {
         grid-template-columns: 1fr;
       }
-
-      .side {
-        grid-template-columns: 1fr 1fr;
-      }
     }
 
     @media (max-width: 640px) {
@@ -280,6 +359,9 @@
         <div class="pill">LIVES<strong id="lives">3</strong></div>
         <div class="pill">LEVEL<strong id="level">1</strong></div>
       </div>
+      <button id="menuToggle" class="menu-toggle" type="button" aria-label="凡例と使い方を開く" aria-expanded="false" aria-controls="menuPanel">
+        <span></span><span></span><span></span>
+      </button>
     </div>
 
     <section class="layout">
@@ -296,32 +378,45 @@
             <button data-act="right">→</button>
             <button data-act="down">↓</button>
             <button data-act="pause" style="grid-column: span 2;">PAUSE</button>
-            <button data-act="restart">RESET</button>
+            <button data-act="restart" style="grid-column: span 3;">RESET</button>
+            <button data-act="exit" style="grid-column: span 3;">終了</button>
           </div>
         </div>
+      </aside>
+    </section>
+  </main>
 
-        <div class="panel">
-          <h2>凡例</h2>
-          <div class="legend">
-            <div class="legend-row"><span class="dot pac">P</span><span>黄色のコマがプレイヤーです。</span></div>
-            <div class="legend-row"><span class="dot pellet">•</span><span>小さいエサを全部取るとクリアです。</span></div>
-            <div class="legend-row"><span class="dot power">◎</span><span>パワーエサでゴーストを食べられます。</span></div>
-            <div class="legend-row"><span class="dot blinky">B</span><span>赤: ブリンキー</span></div>
-            <div class="legend-row"><span class="dot pinky">P</span><span>桃: ピンキー</span></div>
-            <div class="legend-row"><span class="dot inky">I</span><span>青: インキー</span></div>
-            <div class="legend-row"><span class="dot clyde">C</span><span>橙: クライド</span></div>
-          </div>
+  <div id="menuOverlay" class="menu-overlay" hidden>
+    <div id="menuPanel" class="menu-panel" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
+      <div class="menu-header">
+        <h2 id="menuTitle">凡例・使い方</h2>
+        <button id="menuClose" class="menu-close" type="button" aria-label="閉じる">✕</button>
+      </div>
+
+      <div>
+        <h3>凡例</h3>
+        <div class="legend">
+          <div class="legend-row"><span class="dot pac">P</span><span>黄色のコマがプレイヤーです。</span></div>
+          <div class="legend-row"><span class="dot pellet">•</span><span>小さいエサを全部取るとクリアです。</span></div>
+          <div class="legend-row"><span class="dot power">◎</span><span>パワーエサでゴーストを食べられます。</span></div>
+          <div class="legend-row"><span class="dot blinky">B</span><span>赤: ブリンキー</span></div>
+          <div class="legend-row"><span class="dot pinky">P</span><span>桃: ピンキー</span></div>
+          <div class="legend-row"><span class="dot inky">I</span><span>青: インキー</span></div>
+          <div class="legend-row"><span class="dot clyde">C</span><span>橙: クライド</span></div>
         </div>
+      </div>
 
-        <div class="panel hint">
+      <div>
+        <h3>使い方</h3>
+        <div class="hint">
           矢印キーで移動<br>
           Space で一時停止<br>
           R でリスタート<br>
           スマホはボタン操作対応
         </div>
-      </aside>
-    </section>
-  </main>
+      </div>
+    </div>
+  </div>
 
   <script>
     (() => {
@@ -1066,6 +1161,30 @@
       canvas.tabIndex = 0;
       canvas.addEventListener("click", () => canvas.focus());
       canvas.focus();
+
+      const menuToggle = document.getElementById("menuToggle");
+      const menuOverlay = document.getElementById("menuOverlay");
+      const menuClose = document.getElementById("menuClose");
+
+      function openMenu() {
+        menuOverlay.hidden = false;
+        menuToggle.setAttribute("aria-expanded", "true");
+      }
+
+      function closeMenu() {
+        menuOverlay.hidden = true;
+        menuToggle.setAttribute("aria-expanded", "false");
+        canvas.focus();
+      }
+
+      menuToggle.addEventListener("click", openMenu);
+      menuClose.addEventListener("click", closeMenu);
+      menuOverlay.addEventListener("click", (event) => {
+        if (event.target === menuOverlay) closeMenu();
+      });
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && !menuOverlay.hidden) closeMenu();
+      });
 
       document.querySelectorAll("[data-act]").forEach((btn) => {
         const run = () => {

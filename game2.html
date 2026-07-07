@@ -164,6 +164,7 @@
       <div class="card" style="display:grid; gap:8px;">
         <button id="restart" class="btn">リスタート</button>
         <button id="pause" class="btn alt">一時停止</button>
+        <button id="exit" class="btn alt">終了</button>
       </div>
 
       <div class="card">
@@ -203,6 +204,7 @@
       const levelEl = document.getElementById("level");
       const restartBtn = document.getElementById("restart");
       const pauseBtn = document.getElementById("pause");
+      const exitBtn = document.getElementById("exit");
 
       const SHAPES = {
         I: [[1, 1, 1, 1]],
@@ -539,6 +541,9 @@
 
       restartBtn.addEventListener("click", resetGame);
       pauseBtn.addEventListener("click", togglePause);
+      exitBtn.addEventListener("click", () => {
+        window.location.href = "index.html";
+      });
 
       document.querySelectorAll("[data-act]").forEach((btn) => {
         const run = () => {

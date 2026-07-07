@@ -322,6 +322,7 @@ button:disabled {
       <button id="applyPlayersBtn" type="button">人数を反映</button>
       <button id="rollBtn" type="button">サイコロを振る</button>
       <button id="restartBtn" type="button">最初から</button>
+      <button id="exitBtn" type="button">終了</button>
     </div>
 
     <section class="status">
@@ -360,6 +361,7 @@ const playerCountEl = document.getElementById("playerCount");
 const applyPlayersBtn = document.getElementById("applyPlayersBtn");
 const rollBtn = document.getElementById("rollBtn");
 const restartBtn = document.getElementById("restartBtn");
+const exitBtn = document.getElementById("exitBtn");
 const currentPlayerEl = document.getElementById("currentPlayer");
 const positionEl = document.getElementById("position");
 const diceEl = document.getElementById("dice");
@@ -824,6 +826,9 @@ function applyPlayerCount() {
 rollBtn.addEventListener("click", rollDice);
 restartBtn.addEventListener("click", restart);
 applyPlayersBtn.addEventListener("click", applyPlayerCount);
+exitBtn.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
 diceImageEl.addEventListener("animationend", () => {
   diceImageEl.classList.remove("rolling");
 });

@@ -250,6 +250,28 @@
       border-color: rgba(255, 92, 92, 0.28);
     }
 
+    .exit-btn {
+      display: inline-block;
+      margin-top: 12px;
+      border: 1px solid rgba(255, 92, 92, 0.35);
+      border-radius: 999px;
+      padding: 9px 22px;
+      color: #ffd9d9;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      background: linear-gradient(180deg, #5a1f2b, #2c0f16);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+      cursor: pointer;
+    }
+
+    .exit-btn:hover {
+      filter: brightness(1.12);
+    }
+
+    .exit-btn:active {
+      transform: translateY(1px);
+    }
+
     @media (max-width: 760px) {
       body {
         padding: 10px;
@@ -302,6 +324,7 @@
       <p>操作: 矢印キーで移動 / Spaceキーで爆弾を設置 / Rキーでやり直し</p>
       <p class="hint-mobile">スマホは下のボタンで操作できます</p>
       <p id="status">ステータス: ゲーム開始</p>
+      <button type="button" class="exit-btn" id="exitBtn">終了</button>
       <div class="mobile-controls" aria-label="スマホ操作">
         <div class="mobile-pad">
           <button type="button" class="pad-btn pad-btn--dir" id="upBtn" aria-label="上へ">▲</button>
@@ -330,6 +353,7 @@ const rightBtn = document.getElementById("rightBtn");
 const bombBtn = document.getElementById("bombBtn");
 const nextBtn = document.getElementById("nextBtn");
 const restartMobileBtn = document.getElementById("restartMobileBtn");
+const exitBtn = document.getElementById("exitBtn");
 
 const COLS = 13;
 const ROWS = 11;
@@ -1279,6 +1303,10 @@ bindPadButton(rightBtn, "right");
 bindPadButton(bombBtn, "bomb");
 bindPadButton(nextBtn, "next");
 bindPadButton(restartMobileBtn, "restart");
+
+exitBtn.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
 
 function nextStage() {
   if (!gameWin) return;
