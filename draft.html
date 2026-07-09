@@ -163,10 +163,10 @@ button:active { filter: brightness(0.95); }
     </div>
   </div>
   <div class="stage">
-    <canvas id="game" width="360" height="640"></canvas>
+    <canvas id="game" width="360" height="500"></canvas>
     <div class="overlay" id="startOverlay">
       <h2>プテラノドンジャンプ</h2>
-      <p>スペースキー（またはタップ）でジャンプ！<br>連打するほど高く飛べる。<br>岩をよけて、飛んでくるアイテムをゲットしよう。</p>
+      <p>スペースキー（またはタップ）でジャンプ！<br>連打するほど高く飛べる。矢印キーで左右に移動。<br>木や岩をよけて、アイテムをゲットしよう。</p>
       <button id="startBtn">スタート</button>
     </div>
     <div class="overlay" id="gameOverOverlay" hidden>
@@ -175,7 +175,7 @@ button:active { filter: brightness(0.95); }
       <button id="retryBtn">もう一度</button>
     </div>
   </div>
-  <div class="hint">スペース／タップ：ジャンプ（連打で高くジャンプ）　左右から来るアイテムを取るとパワーアップ</div>
+  <div class="hint">スペース／タップ：ジャンプ（連打で高くジャンプ）　←→：移動　木や岩をよけてアイテムを取るとパワーアップ</div>
 </div>
 
 <script>
@@ -184,8 +184,8 @@ button:active { filter: brightness(0.95); }
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
 
-  const GROUND_Y = 500;
-  const HORIZON_Y = 170;
+  const GROUND_Y = 430;
+  const HORIZON_Y = 120;
   const ROAD_TOP_W = W * 0.5;
   const ROAD_GROUND_W = W * 0.95;
   const PLAYER_START_X = W / 2;
@@ -197,13 +197,16 @@ button:active { filter: brightness(0.95); }
   const VH_CAP = 900;
   const MAX_LIVES = 3;
   const MAX_POWER = 2;
-  const INVINCIBLE_TIME = 1.2;
+  const TURN_OUT_TIME = 0.3;
+  const HIT_PAUSE_TIME = 0.5;
+  const TURN_BACK_TIME = 0.3;
+  const INVINCIBLE_TIME = TURN_OUT_TIME + HIT_PAUSE_TIME + TURN_BACK_TIME;
   const FLAP_DURATION = 0.35;
 
   const OBSTACLE_TIERS = [
-    { clear: 70, draw: 34, color: '#8a8f86' },
-    { clear: 180, draw: 58, color: '#6f6a5a' },
-    { clear: 300, draw: 88, color: '#5a4a3a' },
+    { clear: 70, draw: 34, color: '#8a8f86', kind: 'rock' },
+    { clear: 180, draw: 58, color: '#6f6a5a', kind: 'bush' },
+    { clear: 300, draw: 88, color: '#4a6b3a', kind: 'tree' },
   ];
 
   let state = 'idle'; // idle | playing | over
@@ -220,11 +223,13 @@ button:active { filter: brightness(0.95); }
 
   let obstacles = [];
   let items = [];
+  let groundItems = [];
   let particles = [];
 
   let scrollSpeed = 220;
   let obstacleTimer = 0;
   let itemTimer = 0;
+  let groundItemTimer = 0;
   let elapsed = 0;
   let lastTime = 0;
   let tiePhases = [];
@@ -237,6 +242,19 @@ button:active { filter: brightness(0.95); }
 
   function currentTravelTime() {
     return Math.max(1.15, 2.3 - elapsed * 0.02);
+  }
+
+  // shared perspective easing used by anything approaching from the horizon
+  function approachY(t) {
+    if (t <= 1) return HORIZON_Y + (GROUND_Y - HORIZON_Y) * t * t;
+    return GROUND_Y + (t - 1) * (GROUND_Y - HORIZON_Y) * 2;
+  }
+
+  function approachScale(t) {
+    const e = Math.min(t, 1);
+    let s = 0.15 + 0.85 * e * e;
+    if (t > 1) s += (t - 1) * 0.8;
+    return s;
   }
 
   const livesEl = document.getElementById('lives');
@@ -267,10 +285,11 @@ button:active { filter: brightness(0.95); }
     flapAnim = 0;
     playerX = PLAYER_START_X;
     playerH = 0; playerVH = 0; grounded = true; jumpsUsed = 0;
-    obstacles = []; items = []; particles = [];
+    obstacles = []; items = []; groundItems = []; particles = [];
     scrollSpeed = 220;
     obstacleTimer = 1.0;
     itemTimer = 2.5;
+    groundItemTimer = 2.0;
     elapsed = 0;
     tiePhases = [0, 0.25, 0.5, 0.75, 1.0, 1.25];
     renderHud();
@@ -300,7 +319,7 @@ button:active { filter: brightness(0.95); }
 
   function spawnObstacle() {
     const tier = pickTier();
-    obstacles.push({ t: 0, tier, checked: false, exitY: 0 });
+    obstacles.push({ t: 0, tier, checked: false, exitY: 0, seed: Math.random() * 1000 });
   }
 
   function spawnItem() {
@@ -313,6 +332,10 @@ button:active { filter: brightness(0.95); }
       high,
       collected: false,
     });
+  }
+
+  function spawnGroundItem() {
+    groundItems.push({ t: 0, laneRatio: Math.random() * 1.6 - 0.8, collected: false, x: 0, y: 0, scale: 0.15 });
   }
 
   function addParticles(x, y, color, n) {
@@ -361,10 +384,19 @@ button:active { filter: brightness(0.95); }
   }
 
   function update(dt) {
+    // after turning to face the camera, hold the embarrassed pose with the
+    // whole game frozen for a moment before turning back around
+    let frozen = false;
+    if (invincible > 0) {
+      const sinceHit = INVINCIBLE_TIME - invincible;
+      frozen = sinceHit >= TURN_OUT_TIME && sinceHit < TURN_OUT_TIME + HIT_PAUSE_TIME;
+      invincible = Math.max(0, invincible - dt);
+    }
+    if (frozen) return;
+
     elapsed += dt;
     score += dt * 12;
     scrollSpeed = Math.min(420, 220 + elapsed * 4.5);
-    if (invincible > 0) invincible -= dt;
 
     // player physics
     playerVH -= GRAVITY * dt;
@@ -430,6 +462,28 @@ button:active { filter: brightness(0.95); }
         collectItem(it);
       }
     }
+
+    // items lying on the ground, approaching from the horizon like the obstacles
+    groundItemTimer -= dt;
+    if (groundItemTimer <= 0) {
+      spawnGroundItem();
+      groundItemTimer = 4 + Math.random() * 3;
+    }
+    for (const gi of groundItems) {
+      if (gi.collected) continue;
+      gi.t += dt / currentTravelTime();
+      gi.y = approachY(gi.t);
+      gi.scale = approachScale(gi.t);
+      const halfRoad = roadWidthAt(gi.y) / 2 - 20;
+      gi.x = W / 2 + gi.laneRatio * halfRoad;
+      const dx = gi.x - playerX;
+      const playerScreenY = GROUND_Y - playerH;
+      const dy = gi.y - playerScreenY;
+      if (Math.abs(dx) < 24 && Math.abs(dy) < 34) {
+        collectItem(gi);
+      }
+    }
+    groundItems = groundItems.filter(gi => !gi.collected && gi.y < H + 60);
     items = items.filter(it => !it.collected && it.x > -60 && it.x < W + 60);
 
     // particles
@@ -501,6 +555,50 @@ button:active { filter: brightness(0.95); }
     }
   }
 
+  function drawRock(x, y, s, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x - s * 0.5, y);
+    ctx.lineTo(x - s * 0.55, y - s * 0.35);
+    ctx.lineTo(x - s * 0.15, y - s * 0.7);
+    ctx.lineTo(x + s * 0.3, y - s * 0.55);
+    ctx.lineTo(x + s * 0.5, y - s * 0.1);
+    ctx.lineTo(x + s * 0.4, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  function drawBush(x, y, s, color) {
+    ctx.fillStyle = color;
+    const lobes = [[-0.3, -0.3, 0.45], [0.25, -0.35, 0.4], [0, -0.55, 0.42], [0, -0.15, 0.5]];
+    for (const [ox, oy, r] of lobes) {
+      ctx.beginPath();
+      ctx.arc(x + ox * s, y + oy * s, r * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawTree(x, y, s, color) {
+    ctx.fillStyle = '#5a3d24';
+    ctx.fillRect(x - s * 0.08, y - s * 0.5, s * 0.16, s * 0.5);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(x, y - s * 1.35);
+    ctx.lineTo(x - s * 0.5, y - s * 0.5);
+    ctx.lineTo(x + s * 0.5, y - s * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x, y - s * 1.05);
+    ctx.lineTo(x - s * 0.4, y - s * 0.35);
+    ctx.lineTo(x + s * 0.4, y - s * 0.35);
+    ctx.closePath();
+    ctx.fill();
+  }
+
   function drawObstacle(o) {
     let screenY, scale;
     if (!o.checked) {
@@ -513,25 +611,17 @@ button:active { filter: brightness(0.95); }
     }
     const cx = W / 2;
     const halfW = roadWidthAt(screenY) / 2;
-    const h = o.tier.draw * scale;
+    const size = o.tier.draw * scale;
+    const drawFn = o.tier.kind === 'rock' ? drawRock : o.tier.kind === 'bush' ? drawBush : drawTree;
 
-    // a smooth rise in the ground itself, not a shape falling from above
-    ctx.fillStyle = o.tier.color;
-    ctx.beginPath();
-    ctx.moveTo(cx - halfW, screenY);
-    ctx.quadraticCurveTo(cx - halfW * 0.4, screenY - h, cx, screenY - h * 1.05);
-    ctx.quadraticCurveTo(cx + halfW * 0.4, screenY - h, cx + halfW, screenY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-    ctx.beginPath();
-    ctx.moveTo(cx - halfW * 0.3, screenY - h * 0.9);
-    ctx.quadraticCurveTo(cx, screenY - h * 1.05, cx + halfW * 0.3, screenY - h * 0.9);
-    ctx.stroke();
+    // a row of rocks/bushes/trees blocking the full width of the path
+    const offsets = [-0.62, 0, 0.62];
+    offsets.forEach((f, i) => {
+      const jitter = Math.sin(o.seed + i * 12.9) * 0.12;
+      const px = cx + (f + jitter) * halfW;
+      const sizeVar = size * (0.75 + 0.35 * (0.5 + 0.5 * Math.sin(o.seed * 3 + i * 5.4)));
+      drawFn(px, screenY, sizeVar, o.tier.color);
+    });
   }
 
   function drawItem(it) {
@@ -552,6 +642,26 @@ button:active { filter: brightness(0.95); }
     ctx.fill();
     ctx.strokeStyle = '#a06a10';
     ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGroundItem(gi) {
+    const r = 8 * gi.scale + 2;
+    ctx.save();
+    ctx.translate(gi.x, gi.y - r * 0.6);
+    ctx.fillStyle = '#d9534f';
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#8a2f2c';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.strokeStyle = '#4a7a3a';
+    ctx.lineWidth = Math.max(1, r * 0.25);
+    ctx.beginPath();
+    ctx.moveTo(0, -r * 0.9);
+    ctx.lineTo(r * 0.3, -r * 1.5);
     ctx.stroke();
     ctx.restore();
   }
@@ -735,16 +845,29 @@ button:active { filter: brightness(0.95); }
     ctx.clearRect(0, 0, W, H);
     drawBackground();
     for (const o of obstacles) drawObstacle(o);
+    for (const gi of groundItems) if (!gi.collected) drawGroundItem(gi);
     for (const it of items) if (!it.collected) drawItem(it);
 
-    const blink = invincible > 0 && Math.floor(invincible * 12) % 2 === 0;
     const idleSway = 0.08 + Math.sin(idlePhase) * 0.03;
     const flapPulse = Math.sin(Math.min(flapAnim, 1) * Math.PI) * 0.85;
     const wingSpread = idleSway + flapPulse;
+
+    // hit reaction: quick flash while turning to face the camera, a steady
+    // embarrassed hold (paused in update()), then a flash while turning back
     let turnMix = 0;
+    let blink = false;
     if (invincible > 0) {
-      const p = 1 - invincible / INVINCIBLE_TIME;
-      turnMix = p < 0.5 ? p * 2 : (1 - p) * 2;
+      const sinceHit = INVINCIBLE_TIME - invincible;
+      if (sinceHit < TURN_OUT_TIME) {
+        turnMix = sinceHit / TURN_OUT_TIME;
+        blink = Math.floor(invincible * 16) % 2 === 0;
+      } else if (sinceHit < TURN_OUT_TIME + HIT_PAUSE_TIME) {
+        turnMix = 1;
+      } else {
+        const t = (sinceHit - TURN_OUT_TIME - HIT_PAUSE_TIME) / TURN_BACK_TIME;
+        turnMix = 1 - Math.min(1, Math.max(0, t));
+        blink = Math.floor(invincible * 16) % 2 === 0;
+      }
     }
     drawPteranodon(playerX, GROUND_Y - playerH, !grounded, wingSpread, power, blink, turnMix);
 
