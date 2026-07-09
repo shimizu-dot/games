@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>対戦型 戦艦ゲーム</title>
+  <style>
+:root {
+  --bg1: #eaf6ff;
+  --bg2: #d3ecff;
+  --line: #a9c7e7;
+  --accent: #0b6fb0;
+  --text: #123353;
+  --water:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0 5px, transparent 5px 12px),
+    linear-gradient(160deg, #eef8ff 0%, #cfe8fb 100%);
+  --ship-light: #8fb2da;
+  --ship-mid: #5f83b3;
+  --ship-dark: #384f78;
+  --hit: #e5162b;
+  --ok: #2e9e5b;
+  --bad: #d1453b;
+  --surface: #ffffff;
+  --status-bg: #f5faff;
+  --status-border: #cfe2f8;
+  --chip-bg: #ffffff;
+  --chip-border: #c3d9f1;
+  --chip-text: #1f4467;
+  --chip-sunk-bg: #ffe9e7;
+  --hint-text: #3a5a7a;
+  --h3-text: #2d4f73;
+  --btn-border: #1a5fb6;
+  --btn-grad-a: #2d83f1;
+  --btn-grad-b: #1c6fd8;
+  --ship-btn-bg: #ffffff;
+  --ship-btn-placed-bg: #eef8ee;
+  --ship-btn-placed-border: #9bc79b;
+  --ship-btn-placed-text: #3a7d3a;
+  --win-bg: #e6fff2;
+  --win-border: #97d3b4;
+  --win-text: #1f7d4d;
+  --lose-bg: #ffe8e8;
+  --lose-border: #e8a4a4;
+  --lose-text: #a3312f;
+  --toggle-off-a: #9aa5b1;
+  --toggle-off-b: #798392;
+  --toggle-off-border: #6b7684;
+}
+
+:root[data-theme="dark"] {
+  --bg1: #0a1524;
+  --bg2: #050b16;
+  --line: #23405f;
+  --accent: #5aa9e6;
+  --text: #d7e6f5;
+  --water:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0 5px, transparent 5px 12px),
+    linear-gradient(160deg, #14263c 0%, #0a1626 100%);
+  --ship-light: #7ea3cf;
+  --ship-mid: #4f6f99;
+  --ship-dark: #2a3f5c;
+  --surface: #101f33;
+  --status-bg: #12233a;
+  --status-border: #21456c;
+  --chip-bg: #142a44;
+  --chip-border: #285080;
+  --chip-text: #bcd8f2;
+  --chip-sunk-bg: #3a1620;
+  --hint-text: #9db7d2;
+  --h3-text: #9fc7ea;
+  --ship-btn-bg: #142a44;
+  --ship-btn-placed-bg: #163020;
+  --ship-btn-placed-border: #2f6b3f;
+  --ship-btn-placed-text: #7fdb92;
+  --win-bg: #123524;
+  --win-border: #2f8a5c;
+  --win-text: #6fe6a0;
+  --lose-bg: #3a1414;
+  --lose-border: #8a3030;
+  --lose-text: #ff8a8a;
+  --toggle-off-a: #45505e;
+  --toggle-off-b: #333d49;
+  --toggle-off-border: #29323c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Hiragino Gothic ProN", "Yu Gothic", sans-serif;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.game {
+  width: min(980px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(25, 82, 145, 0.12);
+  padding: 18px;
+  overflow-x: auto;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+
+h1 {
+  margin: 0 0 14px;
+  font-size: 26px;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  color: var(--accent);
+}
+
+h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--h3-text);
+}
+
+.panel {
+  margin-bottom: 18px;
+}
+
+.hint {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--hint-text);
+  min-height: 1.2em;
+}
+
+.ship-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ship-btn {
+  border: 1px solid var(--accent);
+  background: var(--ship-btn-bg);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ship-btn.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ship-btn.placed {
+  border-color: var(--ship-btn-placed-border);
+  color: var(--ship-btn-placed-text);
+  background: var(--ship-btn-placed-bg);
+  cursor: default;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+button {
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.28), 0 6px 10px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(0);
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.28), 0 8px 12px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.28), 0 2px 4px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: translateY(0);
+}
+
+.board-wrap {
+  display: flex;
+  flex-direction: row;
+  gap: 28px;
+  justify-content: center;
+}
+
+.board-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 28px repeat(9, 42px);
+  grid-auto-rows: 42px;
+  gap: 3px;
+}
+
+.label-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.cell {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--water);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  user-select: none;
+  overflow: hidden;
+}
+
+.cell.clickable {
+  cursor: pointer;
+}
+
+.cell.clickable:hover {
+  filter: brightness(0.95);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.cell.ship-size-7 {
+  background: var(--ship-dark);
+  box-shadow: inset 0 0 0 1px rgba(8, 16, 30, 0.4);
+}
+
+.cell.ship-size-5 {
+  background: var(--ship-mid);
+  box-shadow: inset 0 0 0 1px rgba(8, 16, 30, 0.4);
+}
+
+.cell.ship-size-3 {
+  background: var(--ship-light);
+  box-shadow: inset 0 0 0 1px rgba(8, 16, 30, 0.4);
+}
+
+.cell.ship-h,
+.cell.ship-v {
+  border-radius: 3px;
+}
+
+.cell.ship-h::before,
+.cell.ship-v::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 55%);
+  pointer-events: none;
+}
+
+.cell.ship-v::before {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 55%);
+}
+
+.cell.ship-h.ship-end-a {
+  border-top-left-radius: 50%;
+  border-bottom-left-radius: 50%;
+}
+
+.cell.ship-h.ship-end-b {
+  border-top-right-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.cell.ship-v.ship-end-a {
+  border-top-left-radius: 50%;
+  border-top-right-radius: 50%;
+}
+
+.cell.ship-v.ship-end-b {
+  border-bottom-left-radius: 50%;
+  border-bottom-right-radius: 50%;
+}
+
+.cell.hit {
+  background: radial-gradient(circle at 50% 45%, #fff3b0 0%, #ffa726 24%, #e5162b 58%, #7a0d16 100%);
+  box-shadow: 0 0 12px rgba(229, 22, 43, 0.6);
+  font-size: 20px;
+}
+
+.cell.miss {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 50% 50%, transparent 46%, rgba(126, 156, 184, 0.55) 48%, transparent 52%),
+    linear-gradient(160deg, #d3e6f5, #aec4d9);
+  color: #3d6488;
+}
+
+.cell.sunk {
+  background: radial-gradient(circle at 50% 38%, #4a4550 0%, #232128 55%, #06060a 100%);
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.65);
+}
+
+@keyframes impact-pop {
+  0% { transform: scale(0.35); filter: brightness(1.9); }
+  45% { transform: scale(1.28); }
+  70% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+@keyframes impact-splash {
+  0% { transform: scale(0.5); opacity: 0.4; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.cell.impact-hit,
+.cell.impact-sunk {
+  animation: impact-pop 550ms ease-out;
+}
+
+.cell.impact-miss {
+  animation: impact-splash 420ms ease-out;
+}
+
+.cell.preview-ok {
+  outline: 3px solid var(--ok);
+  outline-offset: -2px;
+}
+
+.cell.preview-bad {
+  outline: 3px solid var(--bad);
+  outline-offset: -2px;
+}
+
+.fleet-status {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.fleet-chip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fleet-chip.sunk {
+  border-color: var(--hit);
+  background: var(--chip-sunk-bg);
+  color: var(--hit);
+  text-decoration: line-through;
+}
+
+.status {
+  background: var(--status-bg);
+  border: 1px solid var(--status-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  line-height: 1.6;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.hit-counters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.hit-counters span {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--status-border);
+  background: var(--status-bg);
+}
+
+.hit-counters .win-count {
+  color: var(--win-text);
+  border-color: var(--win-border);
+  background: var(--win-bg);
+}
+
+.hit-counters .lose-count {
+  color: var(--lose-text);
+  border-color: var(--lose-border);
+  background: var(--lose-bg);
+}
+
+.fire-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.fire-controls label {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.fire-controls input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 10px;
+  width: 80px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.result-banner {
+  margin: 10px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+}
+
+.result-banner.win {
+  background: var(--win-bg);
+  border: 1px solid var(--win-border);
+  color: var(--win-text);
+}
+
+.result-banner.lose {
+  background: var(--lose-bg);
+  border: 1px solid var(--lose-border);
+  color: var(--lose-text);
+}
+
+.toggle-btn.off {
+  background: linear-gradient(180deg, var(--toggle-off-a), var(--toggle-off-b));
+  border-color: var(--toggle-off-border);
+}
+
+.icon-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.help-dialog {
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  padding: 20px 22px;
+}
+
+.help-dialog::backdrop {
+  background: rgba(6, 12, 22, 0.55);
+}
+
+.help-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.help-dialog h3 {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  color: var(--h3-text);
+}
+
+.help-dialog p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.help-dialog button {
+  margin-top: 18px;
+}
+
+.petal {
+  position: fixed;
+  top: -30px;
+  z-index: 9999;
+  pointer-events: none;
+  animation-name: petal-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(var(--drift), 110vh) rotate(var(--spin));
+    opacity: 0.85;
+  }
+}
+
+.victory-sea {
+  position: fixed;
+  left: 0;
+  bottom: 64px;
+  width: 100%;
+  height: 40px;
+  z-index: 9997;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 14px, transparent 14px 34px),
+    linear-gradient(180deg, rgba(63, 128, 179, 0.6), rgba(18, 52, 88, 0.75));
+  opacity: 0;
+  animation: sea-fade 4.2s ease-in-out forwards;
+}
+
+@keyframes sea-fade {
+  0% { opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.victory-ship {
+  position: fixed;
+  bottom: 66px;
+  right: -300px;
+  width: 270px;
+  height: 100px;
+  z-index: 9998;
+  pointer-events: none;
+  animation: sail-across 4.2s linear forwards;
+}
+
+.victory-ship .hull {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  width: 270px;
+  height: 26px;
+  background: linear-gradient(180deg, #9aa3ac 0%, #5c636b 55%, #34383e 100%);
+  clip-path: polygon(0% 60%, 10% 15%, 92% 5%, 100% 45%, 100% 100%, 5% 100%);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.3);
+}
+
+.victory-ship .super-block {
+  position: absolute;
+  bottom: 40px;
+  background: linear-gradient(180deg, #949ca5, #565d64);
+  border: 1px solid #34383e;
+  border-radius: 2px 2px 0 0;
+}
+
+.victory-ship .super-block.b1 {
+  left: 90px;
+  width: 46px;
+  height: 24px;
+}
+
+.victory-ship .super-block.b2 {
+  left: 150px;
+  width: 40px;
+  height: 18px;
+}
+
+.victory-ship .super-block.b3 {
+  left: 205px;
+  width: 30px;
+  height: 14px;
+}
+
+.victory-ship .mast {
+  position: absolute;
+  width: 2px;
+  background: #2b2f34;
+}
+
+.victory-ship .mast::before,
+.victory-ship .mast::after {
+  content: "";
+  position: absolute;
+  left: -5px;
+  width: 12px;
+  height: 2px;
+  background: #2b2f34;
+}
+
+.victory-ship .mast::before {
+  top: 32%;
+}
+
+.victory-ship .mast::after {
+  top: 62%;
+}
+
+.victory-ship .mast.m1 {
+  bottom: 64px;
+  left: 111px;
+  height: 44px;
+}
+
+.victory-ship .mast.m2 {
+  bottom: 58px;
+  left: 168px;
+  height: 30px;
+}
+
+.victory-ship .radar-dome {
+  position: absolute;
+  bottom: 106px;
+  left: 106px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #cfd4d9, #6b7278);
+}
+
+.victory-ship .stern-pole {
+  position: absolute;
+  bottom: 42px;
+  left: 252px;
+  width: 2px;
+  height: 24px;
+  background: #2b2f34;
+}
+
+.victory-ship .flag {
+  position: absolute;
+  bottom: 63px;
+  left: 253px;
+  width: 18px;
+  height: 12px;
+  background: #ffffff;
+  border: 1px solid #2b2f34;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: left center;
+  animation: flag-flutter 1s ease-in-out infinite;
+}
+
+.victory-ship .flag::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #bc002d;
+}
+
+@keyframes flag-flutter {
+  0% {
+    transform: skewY(0deg) scaleX(1);
+    clip-path: polygon(0% 0%, 100% 4%, 92% 50%, 100% 96%, 0% 100%);
+  }
+  20% {
+    transform: skewY(-9deg) scaleX(0.96);
+    clip-path: polygon(0% 0%, 88% 10%, 100% 50%, 88% 90%, 0% 100%);
+  }
+  40% {
+    transform: skewY(7deg) scaleX(1.03);
+    clip-path: polygon(0% 0%, 100% 14%, 90% 50%, 100% 86%, 0% 100%);
+  }
+  60% {
+    transform: skewY(-8deg) scaleX(0.97);
+    clip-path: polygon(0% 0%, 90% 8%, 100% 50%, 90% 92%, 0% 100%);
+  }
+  80% {
+    transform: skewY(5deg) scaleX(1.01);
+    clip-path: polygon(0% 0%, 100% 12%, 92% 50%, 100% 88%, 0% 100%);
+  }
+  100% {
+    transform: skewY(0deg) scaleX(1);
+    clip-path: polygon(0% 0%, 100% 4%, 92% 50%, 100% 96%, 0% 100%);
+  }
+}
+
+.victory-ship .wake {
+  position: absolute;
+  bottom: 4px;
+  left: -70px;
+  width: 380px;
+  height: 18px;
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.65) 0 12px, transparent 12px 28px);
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+@keyframes sail-across {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(calc(-100vw - 300px));
+  }
+}
+
+@keyframes shake {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-6px, 3px); }
+  40% { transform: translate(5px, -4px); }
+  60% { transform: translate(-5px, 4px); }
+  80% { transform: translate(4px, -3px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes shake-big {
+  0% { transform: translate(0, 0); }
+  15% { transform: translate(-10px, 6px); }
+  30% { transform: translate(9px, -8px); }
+  45% { transform: translate(-9px, 7px); }
+  60% { transform: translate(8px, -6px); }
+  75% { transform: translate(-6px, 5px); }
+  90% { transform: translate(4px, -3px); }
+  100% { transform: translate(0, 0); }
+}
+
+.game.shake {
+  animation: shake 400ms ease;
+}
+
+.game.shake-big {
+  animation: shake-big 650ms ease;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 10px;
+  }
+
+  .game {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  h2 {
+    font-size: 16px;
+  }
+
+  .hint {
+    font-size: 13px;
+  }
+
+  .board-wrap {
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+
+  button {
+    padding: 9px 13px;
+    font-size: 14px;
+  }
+
+  .fire-controls input {
+    width: 64px;
+  }
+}
+
+@media (max-width: 440px) {
+  .fleet-chip {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+}
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>対戦型 戦艦ゲーム</h1>
+
+    <div class="controls">
+      <button id="soundToggleBtn" type="button" class="toggle-btn icon-btn" title="効果音: ON" aria-label="効果音の切り替え">🔊</button>
+      <button id="themeToggleBtn" type="button" class="toggle-btn icon-btn" title="ダークモード: OFF" aria-label="ダークモードの切り替え">🌙</button>
+      <button id="helpBtn" type="button">📖 遊び方</button>
+      <button id="restartBtn" type="button">最初から</button>
+      <button id="exitBtn" type="button">終了</button>
+    </div>
+
+    <section id="placementSection" class="panel">
+      <h2>1. 艦の配置</h2>
+      <div class="ship-picker" id="shipPicker"></div>
+      <div class="controls">
+        <button id="orientationBtn" type="button" class="toggle-btn icon-btn" title="向き: 縦" aria-label="向きの切り替え">↕️</button>
+        <button id="randomPlaceBtn" type="button">Random</button>
+        <button id="resetPlacementBtn" type="button">Reset</button>
+        <button id="startBattleBtn" type="button" disabled>Battle</button>
+      </div>
+      <p class="hint" id="placementMessage" aria-live="polite"></p>
+      <div class="board-wrap">
+        <div class="board-panel">
+          <h3>自分の海域</h3>
+          <div id="ownBoardPlacement" class="grid" aria-label="自分の海域"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="battleSection" class="panel" hidden>
+      <h2>2. 対戦</h2>
+      <div class="status" id="turnStatus">あなたの番です</div>
+      <div class="hit-counters" id="hitCounters"></div>
+      <div class="fire-controls">
+        <label for="coordInput">座標(例: B6)</label>
+        <input id="coordInput" type="text" maxlength="4" placeholder="B6" autocomplete="off">
+        <button id="fireBtn" type="button">発射</button>
+      </div>
+      <p class="hint" id="fireMessage" aria-live="polite"></p>
+      <div id="resultBanner" class="result-banner" hidden></div>
+      <div class="board-wrap">
+        <div class="board-panel">
+          <h3>相手の海域(攻撃対象)</h3>
+          <div id="enemyBoard" class="grid" aria-label="相手の海域"></div>
+          <div class="fleet-status" id="enemyFleetStatus"></div>
+        </div>
+        <div class="board-panel">
+          <h3>自分の海域</h3>
+          <div id="ownBoardBattle" class="grid" aria-label="自分の海域"></div>
+          <div class="fleet-status" id="playerFleetStatus"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="helpDialog" class="help-dialog">
+    <h2>遊び方</h2>
+
+    <h3>1. 艦の配置</h3>
+    <p>戦艦(7マス)を1隻、駆逐艦(5マス)を2隻、巡洋艦(3マス)を3隻、計6隻を A〜I・1〜9 の自分の海域に配置します。</p>
+    <p>上部の艦選択ボタンで配置する艦を選び、「向き」ボタンで縦・横を切り替えてから、盤面のマスをクリック(モバイルはタップ)すると配置されます。「Random」ボタンで自動配置することもできます。全ての艦を配置すると「Battle」ボタンが押せるようになります。</p>
+
+    <h3>2. 攻撃方法</h3>
+    <p>自分の番になったら、相手の海域のマスをクリックするか、座標入力欄に「B6」のように入力して「発射」ボタン(またはEnterキー)を押すと攻撃できます。命中すると爆発マーク、外れると水しぶきマークが表示され、同じ艦のマスを全て命中させると撃沈になります。プレイヤーとCPUが交互に攻撃し合います。</p>
+
+    <h3>3. 勝利条件</h3>
+    <p>相手の艦(6隻)を先にすべて撃沈した方が勝利です。</p>
+
+    <h3>操作方法</h3>
+    <p>配置・攻撃ともに、マウスのクリック、キーボードでの座標入力(Enterで発射)、モバイル端末でのタッチ操作のいずれでも操作できます。</p>
+
+    <button id="closeHelpBtn" type="button">閉じる</button>
+  </dialog>
+
+  <script>
+const COLS = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+const ROWS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const SHIP_TYPES = [
+  { type: "battleship", name: "戦艦", size: 7, count: 1 },
+  { type: "destroyer", name: "駆逐艦", size: 5, count: 2 },
+  { type: "cruiser", name: "巡洋艦", size: 3, count: 3 }
+];
+const SHIP_DEFS = SHIP_TYPES.flatMap((t) =>
+  Array.from({ length: t.count }, (_, i) => ({
+    key: `${t.type}-${i + 1}`,
+    name: t.name,
+    size: t.size,
+    label: t.count > 1 ? `${t.name} #${i + 1}` : t.name
+  }))
+);
+
+let phase = "placement";
+let orientation = "V";
+let selectedShipKey = SHIP_DEFS[0].key;
+let playerGrid = createEmptyGrid();
+let playerShips = [];
+let enemyGrid = createEmptyGrid();
+let enemyShips = [];
+let currentTurn = "player";
+let aiQueue = [];
+let aiTried = new Set();
+let ownBoardCellEls = [];
+
+const shipPickerEl = document.getElementById("shipPicker");
+const orientationBtn = document.getElementById("orientationBtn");
+const randomPlaceBtn = document.getElementById("randomPlaceBtn");
+const resetPlacementBtn = document.getElementById("resetPlacementBtn");
+const startBattleBtn = document.getElementById("startBattleBtn");
+const placementMessageEl = document.getElementById("placementMessage");
+const placementSection = document.getElementById("placementSection");
+const battleSection = document.getElementById("battleSection");
+const turnStatusEl = document.getElementById("turnStatus");
+const hitCountersEl = document.getElementById("hitCounters");
+const coordInput = document.getElementById("coordInput");
+const fireBtn = document.getElementById("fireBtn");
+const fireMessageEl = document.getElementById("fireMessage");
+const resultBannerEl = document.getElementById("resultBanner");
+const enemyFleetStatusEl = document.getElementById("enemyFleetStatus");
+const playerFleetStatusEl = document.getElementById("playerFleetStatus");
+const restartBtn = document.getElementById("restartBtn");
+const exitBtn = document.getElementById("exitBtn");
+const soundToggleBtn = document.getElementById("soundToggleBtn");
+const gameEl = document.querySelector(".game");
+
+let soundEnabled = localStorage.getItem("battleship_sound_enabled") !== "false";
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function playExplosionSound(big) {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  const rumbleDuration = big ? 1.7 : 1.25;
+
+  // "ドッ" — a short percussive impact crack
+  const impactDuration = 0.12;
+  const impactBufferSize = Math.floor(ctx.sampleRate * impactDuration);
+  const impactBuffer = ctx.createBuffer(1, impactBufferSize, ctx.sampleRate);
+  const impactData = impactBuffer.getChannelData(0);
+  for (let i = 0; i < impactBufferSize; i++) {
+    impactData[i] = (Math.random() * 2 - 1) * (1 - i / impactBufferSize);
+  }
+  const impactNoise = ctx.createBufferSource();
+  impactNoise.buffer = impactBuffer;
+
+  const impactFilter = ctx.createBiquadFilter();
+  impactFilter.type = "lowpass";
+  impactFilter.frequency.setValueAtTime(big ? 2200 : 1800, now);
+  impactFilter.frequency.exponentialRampToValueAtTime(300, now + impactDuration);
+
+  const impactGain = ctx.createGain();
+  impactGain.gain.setValueAtTime(big ? 1 : 0.8, now);
+  impactGain.gain.exponentialRampToValueAtTime(0.001, now + impactDuration);
+
+  impactNoise.connect(impactFilter);
+  impactFilter.connect(impactGain);
+  impactGain.connect(ctx.destination);
+  impactNoise.start(now);
+  impactNoise.stop(now + impactDuration);
+
+  // "カーーン" — a swelling low rumble tail
+  const rumbleBufferSize = Math.floor(ctx.sampleRate * rumbleDuration);
+  const rumbleBuffer = ctx.createBuffer(1, rumbleBufferSize, ctx.sampleRate);
+  const rumbleData = rumbleBuffer.getChannelData(0);
+  for (let i = 0; i < rumbleBufferSize; i++) {
+    rumbleData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / rumbleBufferSize, 1.6);
+  }
+  const rumbleNoise = ctx.createBufferSource();
+  rumbleNoise.buffer = rumbleBuffer;
+
+  const rumbleFilter = ctx.createBiquadFilter();
+  rumbleFilter.type = "lowpass";
+  rumbleFilter.frequency.setValueAtTime(big ? 500 : 380, now);
+  rumbleFilter.frequency.exponentialRampToValueAtTime(60, now + rumbleDuration);
+
+  const rumbleGain = ctx.createGain();
+  rumbleGain.gain.setValueAtTime(0.001, now);
+  rumbleGain.gain.exponentialRampToValueAtTime(big ? 0.95 : 0.75, now + 0.08);
+  rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + rumbleDuration);
+
+  rumbleNoise.connect(rumbleFilter);
+  rumbleFilter.connect(rumbleGain);
+  rumbleGain.connect(ctx.destination);
+  rumbleNoise.start(now);
+  rumbleNoise.stop(now + rumbleDuration);
+
+  // deep sub-bass boom for weight
+  const boom = ctx.createOscillator();
+  boom.type = "sine";
+  boom.frequency.setValueAtTime(big ? 70 : 55, now);
+  boom.frequency.exponentialRampToValueAtTime(22, now + rumbleDuration * 0.85);
+
+  const boomGain = ctx.createGain();
+  boomGain.gain.setValueAtTime(0.0001, now);
+  boomGain.gain.exponentialRampToValueAtTime(big ? 1 : 0.8, now + 0.05);
+  boomGain.gain.exponentialRampToValueAtTime(0.001, now + rumbleDuration);
+
+  boom.connect(boomGain);
+  boomGain.connect(ctx.destination);
+  boom.start(now);
+  boom.stop(now + rumbleDuration);
+}
+
+function playFanfare() {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  const notes = [
+    { freq: 523.25, start: 0, dur: 0.16 },
+    { freq: 659.25, start: 0.16, dur: 0.16 },
+    { freq: 783.99, start: 0.32, dur: 0.16 },
+    { freq: 1046.5, start: 0.48, dur: 0.7 }
+  ];
+  notes.forEach(({ freq, start, dur }) => {
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(freq, now + start);
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 3200;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.05);
+  });
+}
+
+function spawnVictoryPetals(count = 70) {
+  const emojis = ["🌸", "🌺", "🌼", "🌷"];
+  for (let i = 0; i < count; i++) {
+    const petal = document.createElement("div");
+    petal.className = "petal";
+    petal.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    const duration = 2.4 + Math.random() * 2.2;
+    const delay = Math.random() * 1.4;
+    petal.style.left = `${Math.random() * 100}vw`;
+    petal.style.fontSize = `${14 + Math.random() * 14}px`;
+    petal.style.setProperty("--drift", `${Math.random() * 200 - 100}px`);
+    petal.style.setProperty("--spin", `${Math.random() * 720 - 360}deg`);
+    petal.style.animationDuration = `${duration}s`;
+    petal.style.animationDelay = `${delay}s`;
+    document.body.appendChild(petal);
+    setTimeout(() => petal.remove(), (duration + delay) * 1000 + 200);
+  }
+}
+
+function spawnVictoryShip() {
+  const sea = document.createElement("div");
+  sea.className = "victory-sea";
+  document.body.appendChild(sea);
+
+  const ship = document.createElement("div");
+  ship.className = "victory-ship";
+  ship.innerHTML =
+    '<div class="wake"></div><div class="hull"></div>' +
+    '<div class="super-block b1"></div><div class="super-block b2"></div><div class="super-block b3"></div>' +
+    '<div class="mast m1"></div><div class="mast m2"></div><div class="radar-dome"></div>' +
+    '<div class="stern-pole"></div><div class="flag"></div>';
+  document.body.appendChild(ship);
+
+  setTimeout(() => {
+    sea.remove();
+    ship.remove();
+  }, 4300);
+}
+
+function triggerScreenShake(big) {
+  const cls = big ? "shake-big" : "shake";
+  gameEl.classList.remove("shake", "shake-big");
+  void gameEl.offsetWidth;
+  gameEl.classList.add(cls);
+  setTimeout(() => gameEl.classList.remove(cls), big ? 700 : 450);
+}
+
+function playHitEffect(big) {
+  playExplosionSound(big);
+  triggerScreenShake(big);
+}
+
+function updateSoundToggleUI() {
+  soundToggleBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundToggleBtn.title = soundEnabled ? "効果音: ON" : "効果音: OFF";
+  soundToggleBtn.setAttribute("aria-label", soundEnabled ? "効果音をオフにする" : "効果音をオンにする");
+  soundToggleBtn.classList.toggle("off", !soundEnabled);
+}
+
+soundToggleBtn.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("battleship_sound_enabled", String(soundEnabled));
+  if (soundEnabled) getAudioContext();
+  updateSoundToggleUI();
+});
+updateSoundToggleUI();
+
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+let darkMode = localStorage.getItem("battleship_dark_mode") === "true";
+
+function updateThemeUI() {
+  themeToggleBtn.textContent = darkMode ? "☀️" : "🌙";
+  themeToggleBtn.title = darkMode ? "ダークモード: ON" : "ダークモード: OFF";
+  themeToggleBtn.setAttribute("aria-label", darkMode ? "ライトモードにする" : "ダークモードにする");
+  themeToggleBtn.classList.toggle("off", !darkMode);
+  document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
+}
+
+themeToggleBtn.addEventListener("click", () => {
+  darkMode = !darkMode;
+  localStorage.setItem("battleship_dark_mode", String(darkMode));
+  updateThemeUI();
+});
+updateThemeUI();
+
+const helpBtn = document.getElementById("helpBtn");
+const helpDialog = document.getElementById("helpDialog");
+const closeHelpBtn = document.getElementById("closeHelpBtn");
+
+helpBtn.addEventListener("click", () => {
+  helpDialog.showModal();
+});
+closeHelpBtn.addEventListener("click", () => {
+  helpDialog.close();
+});
+helpDialog.addEventListener("click", (e) => {
+  if (e.target === helpDialog) helpDialog.close();
+});
+
+function createEmptyGrid() {
+  return Array.from({ length: ROWS.length }, () =>
+    Array.from({ length: COLS.length }, () => ({ ship: null, attacked: false }))
+  );
+}
+
+function parseLabel(str) {
+  const m = /^([A-Ia-i])-?\s*([1-9])$/.exec(str.trim());
+  if (!m) return null;
+  const c = COLS.indexOf(m[1].toUpperCase());
+  const r = ROWS.indexOf(Number(m[2]));
+  if (c === -1 || r === -1) return null;
+  return { r, c };
+}
+
+function computeFootprint(r, c, size, orient) {
+  const cells = [];
+  for (let i = 0; i < size; i++) {
+    const rr = orient === "V" ? r + i : r;
+    const cc = orient === "H" ? c + i : c;
+    if (rr < 0 || rr >= ROWS.length || cc < 0 || cc >= COLS.length) return null;
+    cells.push({ r: rr, c: cc });
+  }
+  return cells;
+}
+
+function placeShipAt(grid, ships, def, r, c, orient) {
+  const cells = computeFootprint(r, c, def.size, orient);
+  if (!cells) return false;
+  for (const { r: rr, c: cc } of cells) {
+    if (grid[rr][cc].ship) return false;
+  }
+  cells.forEach(({ r: rr, c: cc }) => {
+    grid[rr][cc].ship = def.key;
+  });
+  ships.push({ key: def.key, name: def.name, size: def.size, hits: 0, cells });
+  return true;
+}
+
+function generateRandomFleet(maxOuterAttempts = 300) {
+  const defsSorted = [...SHIP_DEFS].sort((a, b) => b.size - a.size);
+  for (let attempt = 0; attempt < maxOuterAttempts; attempt++) {
+    const grid = createEmptyGrid();
+    const ships = [];
+    let ok = true;
+    for (const def of defsSorted) {
+      let placed = false;
+      const canV = def.size <= ROWS.length;
+      const canH = def.size <= COLS.length;
+      for (let tries = 0; tries < 300 && !placed; tries++) {
+        let orient;
+        if (canV && canH) orient = Math.random() < 0.5 ? "V" : "H";
+        else orient = canV ? "V" : "H";
+        const r = Math.floor(Math.random() * ROWS.length);
+        const c = Math.floor(Math.random() * COLS.length);
+        if (placeShipAt(grid, ships, def, r, c, orient)) placed = true;
+      }
+      if (!placed) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return { grid, ships };
+  }
+  throw new Error("fleet generation failed");
+}
+
+function attackCell(grid, ships, r, c) {
+  const cell = grid[r][c];
+  if (cell.attacked) return { result: "already" };
+  cell.attacked = true;
+  if (cell.ship) {
+    const ship = ships.find((s) => s.key === cell.ship);
+    ship.hits += 1;
+    return { result: ship.hits >= ship.size ? "sunk" : "hit", ship };
+  }
+  return { result: "miss" };
+}
+
+function allSunk(ships) {
+  return ships.length === SHIP_DEFS.length && ships.every((s) => s.hits >= s.size);
+}
+
+function applyShipHullClasses(div, ship, r, c) {
+  const orient = ship.cells.length > 1 && ship.cells[0].r === ship.cells[1].r ? "H" : "V";
+  div.classList.add(orient === "H" ? "ship-h" : "ship-v");
+  const first = ship.cells[0];
+  const last = ship.cells[ship.cells.length - 1];
+  if (r === first.r && c === first.c) div.classList.add("ship-end-a");
+  else if (r === last.r && c === last.c) div.classList.add("ship-end-b");
+}
+
+function flashImpact(boardEl, r, c, result) {
+  const cellEl = boardEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+  if (!cellEl) return;
+  const cls = result === "sunk" ? "impact-sunk" : result === "hit" ? "impact-hit" : "impact-miss";
+  cellEl.classList.add(cls);
+  setTimeout(() => cellEl.classList.remove(cls), 700);
+}
+
+function nextPendingShipKey() {
+  const pending = SHIP_DEFS.find((d) => !playerShips.some((s) => s.key === d.key));
+  return pending ? pending.key : null;
+}
+
+function setPlacementMessage(text) {
+  placementMessageEl.textContent = text;
+}
+
+function setFireMessage(text) {
+  fireMessageEl.textContent = text;
+}
+
+function buildHeaderRow(el) {
+  const corner = document.createElement("div");
+  corner.className = "label-cell";
+  el.appendChild(corner);
+  COLS.forEach((letter) => {
+    const div = document.createElement("div");
+    div.className = "label-cell";
+    div.textContent = letter;
+    el.appendChild(div);
+  });
+}
+
+function appendRowLabel(el, num) {
+  const div = document.createElement("div");
+  div.className = "label-cell";
+  div.textContent = num;
+  el.appendChild(div);
+}
+
+function renderShipPicker() {
+  shipPickerEl.innerHTML = "";
+  SHIP_DEFS.forEach((def) => {
+    const placed = playerShips.some((s) => s.key === def.key);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "ship-btn" + (placed ? " placed" : "") + (selectedShipKey === def.key ? " selected" : "");
+    btn.textContent = `${def.label} ${placed ? "配置済み" : ""}`;
+    btn.disabled = placed;
+    btn.addEventListener("click", () => {
+      selectedShipKey = def.key;
+      renderShipPicker();
+      renderOwnBoardPlacement();
+    });
+    shipPickerEl.appendChild(btn);
+  });
+}
+
+function renderOwnBoardPlacement() {
+  const el = document.getElementById("ownBoardPlacement");
+  el.innerHTML = "";
+  ownBoardCellEls = Array.from({ length: ROWS.length }, () => new Array(COLS.length).fill(null));
+  buildHeaderRow(el);
+  for (let r = 0; r < ROWS.length; r++) {
+    appendRowLabel(el, ROWS[r]);
+    for (let c = 0; c < COLS.length; c++) {
+      const cellData = playerGrid[r][c];
+      const div = document.createElement("div");
+      div.className = "cell";
+      if (cellData.ship) {
+        const ship = playerShips.find((s) => s.key === cellData.ship);
+        div.classList.add(`ship-size-${ship.size}`);
+        applyShipHullClasses(div, ship, r, c);
+      }
+      if (selectedShipKey && !cellData.ship) {
+        div.classList.add("clickable");
+        div.addEventListener("mouseenter", () => showPlacementPreview(r, c));
+        div.addEventListener("mouseleave", clearPlacementPreview);
+        div.addEventListener("click", () => attemptPlace(r, c));
+      }
+      el.appendChild(div);
+      ownBoardCellEls[r][c] = div;
+    }
+  }
+}
+
+function showPlacementPreview(r, c) {
+  clearPlacementPreview();
+  if (!selectedShipKey) return;
+  const def = SHIP_DEFS.find((d) => d.key === selectedShipKey);
+  const cells = computeFootprint(r, c, def.size, orientation);
+  const valid = !!cells && cells.every(({ r: rr, c: cc }) => !playerGrid[rr][cc].ship);
+  const targetCells = cells || [{ r, c }];
+  targetCells.forEach(({ r: rr, c: cc }) => {
+    const cellEl = ownBoardCellEls[rr] && ownBoardCellEls[rr][cc];
+    if (cellEl) cellEl.classList.add(valid ? "preview-ok" : "preview-bad");
+  });
+}
+
+function clearPlacementPreview() {
+  for (let r = 0; r < ROWS.length; r++) {
+    for (let c = 0; c < COLS.length; c++) {
+      const cellEl = ownBoardCellEls[r][c];
+      if (cellEl) cellEl.classList.remove("preview-ok", "preview-bad");
+    }
+  }
+}
+
+function attemptPlace(r, c) {
+  if (!selectedShipKey) return;
+  const def = SHIP_DEFS.find((d) => d.key === selectedShipKey);
+  const ok = placeShipAt(playerGrid, playerShips, def, r, c, orientation);
+  if (!ok) {
+    setPlacementMessage("そこには配置できません(範囲外または他の艦と重複しています)。");
+    return;
+  }
+  setPlacementMessage(`${def.label}を配置しました。`);
+  selectedShipKey = nextPendingShipKey();
+  renderShipPicker();
+  renderOwnBoardPlacement();
+  if (playerShips.length === SHIP_DEFS.length) {
+    startBattleBtn.disabled = false;
+    setPlacementMessage("すべての艦を配置しました。「Battle」を押してください。");
+  }
+}
+
+function renderEnemyBoard() {
+  const el = document.getElementById("enemyBoard");
+  el.innerHTML = "";
+  buildHeaderRow(el);
+  for (let r = 0; r < ROWS.length; r++) {
+    appendRowLabel(el, ROWS[r]);
+    for (let c = 0; c < COLS.length; c++) {
+      const cellData = enemyGrid[r][c];
+      const div = document.createElement("div");
+      div.className = "cell";
+      div.dataset.r = r;
+      div.dataset.c = c;
+      if (cellData.attacked) {
+        if (cellData.ship) {
+          const ship = enemyShips.find((s) => s.key === cellData.ship);
+          if (ship.hits >= ship.size) {
+            div.classList.add("sunk");
+            div.textContent = "☠";
+          } else {
+            div.classList.add("hit");
+            div.textContent = "💥";
+          }
+        } else {
+          div.classList.add("miss");
+          div.textContent = "💧";
+        }
+      } else if (phase === "battle" && currentTurn === "player") {
+        div.classList.add("clickable");
+        div.addEventListener("click", () => handlePlayerAttack(r, c));
+      }
+      el.appendChild(div);
+    }
+  }
+}
+
+function renderOwnBoardBattle() {
+  const el = document.getElementById("ownBoardBattle");
+  el.innerHTML = "";
+  buildHeaderRow(el);
+  for (let r = 0; r < ROWS.length; r++) {
+    appendRowLabel(el, ROWS[r]);
+    for (let c = 0; c < COLS.length; c++) {
+      const cellData = playerGrid[r][c];
+      const div = document.createElement("div");
+      div.className = "cell";
+      div.dataset.r = r;
+      div.dataset.c = c;
+      if (cellData.ship) {
+        const ship = playerShips.find((s) => s.key === cellData.ship);
+        div.classList.add(`ship-size-${ship.size}`);
+        applyShipHullClasses(div, ship, r, c);
+      }
+      if (cellData.attacked) {
+        if (cellData.ship) {
+          const ship = playerShips.find((s) => s.key === cellData.ship);
+          if (ship.hits >= ship.size) {
+            div.classList.add("sunk");
+            div.textContent = "☠";
+          } else {
+            div.classList.add("hit");
+            div.textContent = "💥";
+          }
+        } else {
+          div.classList.add("miss");
+          div.textContent = "💧";
+        }
+      }
+      el.appendChild(div);
+    }
+  }
+}
+
+function renderFleetStatus(el, ships) {
+  el.innerHTML = "";
+  SHIP_DEFS.forEach((def) => {
+    const ship = ships.find((s) => s.key === def.key);
+    const sunk = !!ship && ship.hits >= ship.size;
+    const chip = document.createElement("span");
+    chip.className = "fleet-chip" + (sunk ? " sunk" : "");
+    chip.textContent = `${def.label}${sunk ? "(撃沈)" : ""}`;
+    el.appendChild(chip);
+  });
+}
+
+function remainingHitsToSink(ships) {
+  return ships.reduce((sum, s) => sum + (s.size - s.hits), 0);
+}
+
+function updateHitCounters() {
+  const toWin = remainingHitsToSink(enemyShips);
+  const toLose = remainingHitsToSink(playerShips);
+  hitCountersEl.innerHTML =
+    `<span class="win-count">🎯 勝利まで あと${toWin}発</span>` +
+    `<span class="lose-count">🛡️ 敗北まで あと${toLose}発</span>`;
+}
+
+function updateTurnStatus() {
+  if (phase === "over") {
+    turnStatusEl.textContent = "ゲーム終了";
+    return;
+  }
+  turnStatusEl.textContent =
+    currentTurn === "player"
+      ? "あなたの番です。相手の海域のマスをクリックするか、座標を入力して発射してください。"
+      : "相手が狙っています...";
+}
+
+function handlePlayerAttack(r, c) {
+  if (phase !== "battle" || currentTurn !== "player") return;
+  const cellData = enemyGrid[r][c];
+  if (cellData.attacked) {
+    setFireMessage("そこはすでに攻撃済みです。");
+    return;
+  }
+  setFireMessage("");
+  const res = attackCell(enemyGrid, enemyShips, r, c);
+  if (res.result === "hit" || res.result === "sunk") {
+    playExplosionSound(res.result === "sunk");
+  }
+  renderFleetStatus(enemyFleetStatusEl, enemyShips);
+  updateHitCounters();
+  if (allSunk(enemyShips)) {
+    endGame("player");
+    flashImpact(document.getElementById("enemyBoard"), r, c, res.result);
+    return;
+  }
+  currentTurn = "enemy";
+  updateTurnStatus();
+  renderEnemyBoard();
+  flashImpact(document.getElementById("enemyBoard"), r, c, res.result);
+  setTimeout(enemyTurn, 700);
+}
+
+function pushNeighbors(r, c) {
+  const deltas = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  deltas.forEach(([dr, dc]) => {
+    const rr = r + dr;
+    const cc = c + dc;
+    if (rr >= 0 && rr < ROWS.length && cc >= 0 && cc < COLS.length && !aiTried.has(`${rr},${cc}`)) {
+      aiQueue.push({ r: rr, c: cc });
+    }
+  });
+}
+
+function chooseAiTarget() {
+  while (aiQueue.length) {
+    const t = aiQueue.shift();
+    if (!aiTried.has(`${t.r},${t.c}`)) return t;
+  }
+  const candidates = [];
+  for (let r = 0; r < ROWS.length; r++) {
+    for (let c = 0; c < COLS.length; c++) {
+      if (!aiTried.has(`${r},${c}`)) candidates.push({ r, c });
+    }
+  }
+  return candidates[Math.floor(Math.random() * candidates.length)];
+}
+
+function enemyTurn() {
+  if (phase !== "battle") return;
+  const target = chooseAiTarget();
+  const { r, c } = target;
+  aiTried.add(`${r},${c}`);
+  const res = attackCell(playerGrid, playerShips, r, c);
+  if (res.result === "hit") {
+    pushNeighbors(r, c);
+    playHitEffect(false);
+  } else if (res.result === "sunk") {
+    playHitEffect(true);
+  }
+  renderOwnBoardBattle();
+  renderFleetStatus(playerFleetStatusEl, playerShips);
+  updateHitCounters();
+  flashImpact(document.getElementById("ownBoardBattle"), r, c, res.result);
+  if (allSunk(playerShips)) {
+    endGame("enemy");
+    return;
+  }
+  currentTurn = "player";
+  updateTurnStatus();
+  renderEnemyBoard();
+}
+
+function endGame(winner) {
+  phase = "over";
+  resultBannerEl.hidden = false;
+  resultBannerEl.textContent =
+    winner === "player"
+      ? "🎉 勝利！ 相手の艦隊をすべて撃沈しました！"
+      : "😢 敗北… あなたの艦隊は全滅しました。";
+  resultBannerEl.className = "result-banner " + (winner === "player" ? "win" : "lose");
+  updateTurnStatus();
+  renderEnemyBoard();
+  if (winner === "player") {
+    playFanfare();
+    spawnVictoryPetals();
+    setTimeout(spawnVictoryShip, 1300);
+  }
+}
+
+function fireFromInput() {
+  const parsed = parseLabel(coordInput.value);
+  if (!parsed) {
+    setFireMessage("座標の形式が正しくありません(例: B6)。");
+    return;
+  }
+  coordInput.value = "";
+  handlePlayerAttack(parsed.r, parsed.c);
+}
+
+function startBattle() {
+  const enemyFleet = generateRandomFleet();
+  enemyGrid = enemyFleet.grid;
+  enemyShips = enemyFleet.ships;
+  aiQueue = [];
+  aiTried = new Set();
+  phase = "battle";
+  currentTurn = "player";
+  placementSection.hidden = true;
+  battleSection.hidden = false;
+  resultBannerEl.hidden = true;
+  renderEnemyBoard();
+  renderOwnBoardBattle();
+  renderFleetStatus(playerFleetStatusEl, playerShips);
+  renderFleetStatus(enemyFleetStatusEl, enemyShips);
+  updateHitCounters();
+  updateTurnStatus();
+}
+
+function restartGame() {
+  playerGrid = createEmptyGrid();
+  playerShips = [];
+  enemyGrid = createEmptyGrid();
+  enemyShips = [];
+  selectedShipKey = SHIP_DEFS[0].key;
+  orientation = "V";
+  updateOrientationUI();
+  phase = "placement";
+  currentTurn = "player";
+  aiQueue = [];
+  aiTried = new Set();
+  placementSection.hidden = false;
+  battleSection.hidden = true;
+  resultBannerEl.hidden = true;
+  startBattleBtn.disabled = true;
+  setFireMessage("");
+  renderShipPicker();
+  renderOwnBoardPlacement();
+  setPlacementMessage("艦を選択し、向きを決めて配置してください。");
+}
+
+function updateOrientationUI() {
+  orientationBtn.textContent = orientation === "V" ? "↕️" : "↔️";
+  orientationBtn.title = orientation === "V" ? "向き: 縦" : "向き: 横";
+  orientationBtn.setAttribute("aria-label", orientation === "V" ? "横向きにする" : "縦向きにする");
+}
+
+orientationBtn.addEventListener("click", () => {
+  orientation = orientation === "V" ? "H" : "V";
+  updateOrientationUI();
+  renderOwnBoardPlacement();
+});
+
+randomPlaceBtn.addEventListener("click", () => {
+  const fleet = generateRandomFleet();
+  playerGrid = fleet.grid;
+  playerShips = fleet.ships;
+  selectedShipKey = null;
+  renderShipPicker();
+  renderOwnBoardPlacement();
+  startBattleBtn.disabled = false;
+  setPlacementMessage("ランダムに艦を配置しました。「Battle」を押してください。");
+});
+
+resetPlacementBtn.addEventListener("click", () => {
+  playerGrid = createEmptyGrid();
+  playerShips = [];
+  selectedShipKey = SHIP_DEFS[0].key;
+  startBattleBtn.disabled = true;
+  renderShipPicker();
+  renderOwnBoardPlacement();
+  setPlacementMessage("配置をリセットしました。");
+});
+
+startBattleBtn.addEventListener("click", startBattle);
+restartBtn.addEventListener("click", restartGame);
+exitBtn.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
+fireBtn.addEventListener("click", fireFromInput);
+coordInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") fireFromInput();
+});
+
+restartGame();
+  </script>
+</body>
+</html>

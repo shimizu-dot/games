@@ -329,6 +329,207 @@
       box-shadow: 8px 5px 0 var(--shadow), 4px 10px 0 var(--shadow);
     }
 
+    .game-link:nth-child(5) {
+      background: #e3d4ff;
+    }
+
+    .game-link:nth-child(6) {
+      background: #cfe8ff;
+    }
+
+    .game-link:nth-child(7) {
+      background: #ffe0b2;
+    }
+
+    .game-link:nth-child(8) {
+      background: #ffd6d6;
+    }
+
+    .game-link.coming-soon {
+      background: #e4e6ea;
+      cursor: default;
+    }
+
+    .game-link.coming-soon:hover,
+    .game-link.coming-soon:focus-visible,
+    .game-link.coming-soon:active {
+      transform: none;
+      box-shadow: 0 8px 0 var(--shadow);
+    }
+
+    .soon-art {
+      display: grid;
+      place-items: center;
+      background: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.06) 0 10px, transparent 10px 20px);
+    }
+
+    .soon-icon {
+      font-size: 2.4rem;
+      opacity: 0.6;
+    }
+
+    .soon-badge {
+      background: #9aa0aa;
+      color: #fff;
+    }
+
+    .pacman-art {
+      position: relative;
+      background: #0b1020;
+    }
+
+    .pacman {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      left: 20px;
+      bottom: 20px;
+      background: var(--yellow);
+      border-radius: 50%;
+    }
+
+    .pacman::before {
+      content: "";
+      position: absolute;
+      width: 0;
+      height: 0;
+      right: -2px;
+      top: 11px;
+      border-style: solid;
+      border-width: 12px 24px 12px 0;
+      border-color: transparent #0b1020 transparent transparent;
+    }
+
+    .pac-dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ffe9a8;
+    }
+
+    .pac-dot.d1 {
+      right: 28px;
+      bottom: 42px;
+    }
+
+    .pac-dot.d2 {
+      right: 14px;
+      bottom: 42px;
+    }
+
+    .battle-art {
+      position: relative;
+      background: linear-gradient(180deg, #bfe3ff 0 55%, #1e5f91 55% 100%);
+    }
+
+    .battle-ship {
+      position: absolute;
+      width: 68px;
+      height: 20px;
+      left: 18px;
+      bottom: 14px;
+      background: #3a4a63;
+      border: 3px solid var(--shadow);
+      border-radius: 6px 14px 6px 6px;
+    }
+
+    .battle-ship::before {
+      content: "";
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      top: -12px;
+      left: 20px;
+      background: #3a4a63;
+      border: 3px solid var(--shadow);
+      border-radius: 3px 3px 0 0;
+    }
+
+    .hit-mark {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid var(--shadow);
+      background: var(--pink);
+    }
+
+    .hit-mark.m1 { left: 14px; top: 14px; }
+    .hit-mark.m2 { left: 40px; top: 26px; background: var(--yellow); }
+    .hit-mark.m3 { right: 16px; top: 16px; background: #fff; }
+
+    .janken-art {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(160deg, #ffe0b2 0%, #ffcc80 100%);
+    }
+
+    .janken-art .fist {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 3px solid var(--shadow);
+      box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.15);
+    }
+
+    .janken-art .fist-left { background: var(--pink); }
+    .janken-art .fist-right { background: var(--green); }
+
+    .janken-art .vs-spark {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 3px solid var(--shadow);
+      background: #fff;
+      box-shadow: 3px 3px 0 var(--shadow);
+      font-size: 0.7rem;
+      font-weight: 900;
+      color: var(--shadow);
+    }
+
+    .barrel-art {
+      position: relative;
+      background: radial-gradient(circle at 35% 30%, #e8b96a, #a8703a 75%);
+    }
+
+    .barrel-art .band {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .barrel-art .band.b1 { top: 26px; }
+    .barrel-art .band.b2 { bottom: 26px; }
+
+    .barrel-art .peek {
+      position: absolute;
+      left: 50%;
+      top: 20px;
+      transform: translateX(-50%);
+      font-size: 30px;
+    }
+
+    .barrel-art .sword {
+      position: absolute;
+      width: 34px;
+      height: 8px;
+      right: 20px;
+      bottom: 24px;
+      background: linear-gradient(135deg, #f2f2f2, #b9b9b9);
+      border: 2px solid var(--shadow);
+      border-radius: 2px;
+      transform: rotate(-25deg);
+    }
+
     @media (max-width: 900px) {
       .games {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -542,6 +743,66 @@
           </div>
           <b class="play">PLAY</b>
         </a>
+        <a class="game-link" href="game5.html">
+          <div class="preview pacman-art" aria-hidden="true">
+            <span class="pac-dot d1"></span>
+            <span class="pac-dot d2"></span>
+            <span class="pacman"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 5</small>
+            <span>パックマン風</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game6.html">
+          <div class="preview battle-art" aria-hidden="true">
+            <span class="hit-mark m1"></span>
+            <span class="hit-mark m2"></span>
+            <span class="hit-mark m3"></span>
+            <span class="battle-ship"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 6</small>
+            <span>対戦型 戦艦ゲーム</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game7.html">
+          <div class="preview janken-art" aria-hidden="true">
+            <span class="fist fist-left"></span>
+            <span class="vs-spark">VS</span>
+            <span class="fist fist-right"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 7</small>
+            <span>じゃんけん ﾌｧｲﾀｰ</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <a class="game-link" href="game8.html">
+          <div class="preview barrel-art" aria-hidden="true">
+            <span class="band b1"></span>
+            <span class="band b2"></span>
+            <span class="peek">🏴‍☠️</span>
+            <span class="sword"></span>
+          </div>
+          <div class="copy">
+            <small>GAME 8</small>
+            <span>危機一髪風</span>
+          </div>
+          <b class="play">PLAY</b>
+        </a>
+        <div class="game-link coming-soon" aria-disabled="true">
+          <div class="preview soon-art" aria-hidden="true">
+            <span class="soon-icon">➕</span>
+          </div>
+          <div class="copy">
+            <small>NEXT GAME</small>
+            <span>Coming soon...</span>
+          </div>
+          <b class="play soon-badge">SOON</b>
+        </div>
       </nav>
     </div>
   </main>

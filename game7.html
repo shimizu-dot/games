@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>じゃんけん ﾌｧｲﾀｰ</title>
+  <style>
+:root {
+  --bg1: #fff3e0;
+  --bg2: #ffe0b2;
+  --line: #e6c79c;
+  --accent: #d1495b;
+  --text: #402a1f;
+  --surface: #fffaf3;
+  --muted: #8a6d55;
+  --panel-bg: #fff6ea;
+  --panel-border: #e2c49a;
+  --btn-border: #a8341f;
+  --btn-grad-a: #ef5350;
+  --btn-grad-b: #d1495b;
+  --cue-color: #ffd447;
+  --hit-color: #2e9e5b;
+  --miss-color: #8a6d55;
+  --lose-color: #d1453b;
+  --toggle-off-a: #9aa5b1;
+  --toggle-off-b: #798392;
+  --toggle-off-border: #6b7684;
+  --win-bg: #e6fff2;
+  --win-border: #97d3b4;
+  --win-text: #1f7d4d;
+  --win-shadow: rgba(255, 204, 51, 0.85);
+  --win-stroke: #0c3d26;
+  --lose-bg: #ffe8e8;
+  --lose-border: #e8a4a4;
+  --lose-text: #a3312f;
+  --lose-shadow: rgba(255, 204, 51, 0.85);
+  --lose-stroke: #5c211f;
+  --draw-bg: #fff6de;
+  --draw-border: #e2cd8f;
+  --draw-text: #8a6d1f;
+}
+
+:root[data-theme="dark"] {
+  --bg1: #241812;
+  --bg2: #140d0a;
+  --line: #4a3424;
+  --accent: #ff7a86;
+  --text: #f3e3d8;
+  --surface: #1e140f;
+  --muted: #c7ab95;
+  --panel-bg: #241a13;
+  --panel-border: #4a3424;
+  --btn-border: #ff7a86;
+  --btn-grad-a: #e05560;
+  --btn-grad-b: #b8394a;
+  --toggle-off-a: #45505e;
+  --toggle-off-b: #333d49;
+  --toggle-off-border: #29323c;
+  --win-bg: #123524;
+  --win-border: #2f8a5c;
+  --win-text: #6fe6a0;
+  --win-shadow: rgba(6, 40, 24, 0.7);
+  --win-stroke: #052815;
+  --lose-bg: #3a1414;
+  --lose-border: #8a3030;
+  --lose-text: #ff8a8a;
+  --lose-shadow: rgba(60, 12, 12, 0.7);
+  --lose-stroke: #3a0f0f;
+  --draw-bg: #3a2f14;
+  --draw-border: #8a7530;
+  --draw-text: #ffdf8a;
+}
+
+* { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Hiragino Gothic ProN", "Yu Gothic", sans-serif;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  padding: 20px;
+  transition: background 200ms ease, color 200ms ease;
+}
+
+.game {
+  position: relative;
+  width: min(680px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 24px rgba(120, 70, 30, 0.14);
+  padding: 20px;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+
+.game.spin {
+  animation: screen-spin 800ms ease-in-out;
+}
+
+@keyframes screen-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(720deg); }
+}
+
+h1 {
+  margin: 0 0 14px;
+  font-size: 24px;
+}
+
+.controls {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.control-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--line);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+button {
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+  color: #fff;
+  border-radius: 10px;
+  font-weight: 700;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  box-shadow: 0 4px 0 rgba(120, 120, 120, 0.55), 0 6px 10px rgba(120, 120, 120, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(0);
+  transition: transform 100ms ease, box-shadow 100ms ease, filter 100ms ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 rgba(120, 120, 120, 0.55), 0 8px 12px rgba(120, 120, 120, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(120, 120, 120, 0.55), 0 2px 4px rgba(120, 120, 120, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.controls > button:not(.icon-btn) {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.toggle-btn.off {
+  background: linear-gradient(180deg, var(--toggle-off-a), var(--toggle-off-b));
+  border-color: var(--toggle-off-border);
+}
+
+.mode-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+  min-width: 160px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mode-slider {
+  flex: 1;
+  min-width: 70px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.mode-label {
+  min-width: 92px;
+  color: var(--accent);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.scoreboard {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.scoreboard .round-tag {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.score-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.collected-items {
+  font-size: 15px;
+  line-height: 1;
+  min-height: 16px;
+  display: flex;
+  gap: 2px;
+}
+
+.collected-item-btn {
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 1px 2px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+  transform: none;
+}
+
+.collected-item-btn:hover:not(:disabled) {
+  background: var(--panel-border);
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+.collected-item-btn:active:not(:disabled) {
+  transform: scale(0.9);
+  box-shadow: none;
+}
+
+.stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  padding: 18px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.countdown-text {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--accent);
+  min-height: 44px;
+}
+
+.hands-row {
+  display: flex;
+  gap: 36px;
+  align-items: center;
+  justify-content: center;
+}
+
+.hand-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.hand-display .emoji {
+  font-size: 46px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+}
+
+.hand-display .who {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.choice-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  font-size: 26px;
+}
+
+.choice-btn span.label {
+  font-size: 12px;
+}
+
+.hand-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  background: #000;
+  border-radius: 6px;
+}
+
+.choice-btn.selected {
+  outline: 3px solid var(--cue-color);
+  outline-offset: -2px;
+}
+
+.choice-btn.selected:disabled {
+  opacity: 1;
+}
+
+.result-msg {
+  font-size: 16px;
+  font-weight: 700;
+  min-height: 24px;
+}
+
+.interval-countdown {
+  font-size: 40px;
+  font-weight: 900;
+  color: var(--accent);
+  text-align: center;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 6px 0;
+  margin-bottom: 14px;
+}
+
+.item-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 39;
+  background: rgba(0, 0, 0, 0.55);
+  animation: item-popup-fade-in 200ms ease;
+}
+
+@keyframes item-popup-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.item-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  width: min(280px, 84%);
+  text-align: center;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 18px 16px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+  animation: item-popup-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.item-popup-close {
+  margin-top: 12px;
+  padding: 6px 20px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@keyframes item-popup-in {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.item-popup-icon {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.item-popup-name {
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.item-popup-desc {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.gacha-ball {
+  position: absolute;
+  top: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 30%),
+    linear-gradient(180deg, #ffffff 0%, #f4f4f4 47%, #d8d8d8 50%, #ff7e52 50%, #ff8a5c 100%),
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 0.3) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.3);
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.35),
+    inset -3px -4px 5px rgba(0, 0, 0, 0.28),
+    inset 2px 2px 3px rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  z-index: 5;
+}
+
+.gacha-ball.rolling-ltr {
+  animation: gacha-roll-ltr 7s linear forwards;
+}
+
+.gacha-ball.rolling-rtl {
+  animation: gacha-roll-rtl 7s linear forwards;
+}
+
+@keyframes gacha-roll-ltr {
+  from { left: -40px; transform: rotate(0deg); }
+  to { left: 100%; transform: rotate(720deg); }
+}
+
+@keyframes gacha-roll-rtl {
+  from { left: 100%; transform: rotate(0deg); }
+  to { left: -40px; transform: rotate(-720deg); }
+}
+
+.duel-row {
+  display: flex;
+  gap: 40px;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+}
+
+.duel-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.duel-panel .who {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.duel-panel .role {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.hit-flash {
+  width: 75%;
+  max-width: 75%;
+  border-radius: 12px;
+  display: none;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.hit-flash.show {
+  display: block;
+  animation: hit-pop 400ms ease-out;
+}
+
+@keyframes hit-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); }
+}
+
+.result-image {
+  display: block;
+  width: 220px;
+  max-width: 70%;
+  margin: 14px auto 0;
+  border-radius: 12px;
+}
+
+.duel-action-row {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.duel-icon-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+}
+
+.duel-icon-btn img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+
+.duel-icon-btn .label {
+  font-size: 13px;
+}
+
+.result-banner {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 16px;
+  text-align: center;
+}
+
+.janken-stats {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.result-ticker {
+  position: relative;
+  overflow: hidden;
+  height: 48px;
+  margin: 12px 0 0;
+  border-radius: 10px;
+}
+
+.result-ticker .ticker-text {
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-weight: 900;
+  font-style: italic;
+  font-size: 32px;
+  letter-spacing: 0.08em;
+  -webkit-text-stroke: 2px var(--ticker-stroke, #1a1006);
+  paint-order: stroke fill;
+  text-shadow: 4px 4px 0 var(--ticker-shadow, rgba(0, 0, 0, 0.4));
+  animation: ticker-move 3.5s linear infinite;
+}
+
+@keyframes ticker-move {
+  from { left: 100%; }
+  to { left: -100%; }
+}
+
+.result-ticker.win {
+  background: var(--win-bg);
+}
+
+.result-ticker.win .ticker-text {
+  color: var(--win-text);
+  --ticker-shadow: var(--win-shadow);
+  --ticker-stroke: var(--win-stroke);
+}
+
+.result-ticker.lose {
+  background: var(--lose-bg);
+}
+
+.result-ticker.lose .ticker-text {
+  color: var(--lose-text);
+  --ticker-shadow: var(--lose-shadow);
+  --ticker-stroke: var(--lose-stroke);
+}
+
+.result-banner.win {
+  background: var(--win-bg);
+  border: 1px solid var(--win-border);
+  color: var(--win-text);
+}
+
+.result-banner.lose {
+  background: var(--lose-bg);
+  border: 1px solid var(--lose-border);
+  color: var(--lose-text);
+}
+
+.result-banner.draw {
+  background: var(--draw-bg);
+  border: 1px solid var(--draw-border);
+  color: var(--draw-text);
+}
+
+.help-dialog {
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  padding: 20px 22px;
+}
+
+.help-dialog::backdrop {
+  background: rgba(20, 12, 8, 0.55);
+}
+
+.help-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+  color: var(--accent);
+}
+
+.help-dialog h3 {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+.help-dialog p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.help-dialog button {
+  margin-top: 18px;
+}
+
+.pause-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 12, 8, 0.5);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  z-index: 50;
+  pointer-events: none;
+}
+
+@media (max-width: 480px) {
+  .game { padding: 14px; }
+  h1 { font-size: 20px; }
+  .hands-row, .duel-row { gap: 20px; }
+  .countdown-text { font-size: 26px; }
+  .hand-display .emoji { font-size: 36px; }
+  .mode-row { flex-basis: 100%; }
+  .control-sep { display: none; }
+}
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>じゃんけん ﾌｧｲﾀｰ</h1>
+
+    <div class="controls">
+      <button id="soundToggleBtn" type="button" class="toggle-btn icon-btn" title="効果音: ON" aria-label="効果音の切り替え">🔊</button>
+      <button id="themeToggleBtn" type="button" class="toggle-btn icon-btn" title="ダークモード: OFF" aria-label="ダークモードの切り替え">🌙</button>
+      <button id="pauseBtn" type="button" class="icon-btn" title="一時停止" aria-label="一時停止">⏸</button>
+      <button id="helpBtn" type="button">📖 遊び方</button>
+      <button id="restartBtn" type="button">最初から</button>
+      <button id="exitBtn" type="button">終了</button>
+      <span class="control-sep"></span>
+      <div class="mode-row">
+        <span>難易度:</span>
+        <input type="range" id="modeSlider" class="mode-slider" min="1" max="3" step="1" value="2" aria-label="コンピュータの反応レベル">
+        <span class="mode-label" id="modeLabel">レベル2(普通)</span>
+      </div>
+    </div>
+
+    <div class="scoreboard">
+      <div class="score-block">
+        <span>あなた <b id="playerScore"></b></span>
+        <div class="collected-items" id="collectedItemsRow"></div>
+      </div>
+      <span class="round-tag" id="roundTag">３本先取で勝利</span>
+      <span>コンピュータ <b id="computerScore"></b></span>
+    </div>
+
+    <section id="jankenStage" class="stage">
+      <div class="countdown-text" id="countdownText"></div>
+      <div class="hands-row">
+        <div class="hand-display">
+          <div class="emoji" id="computerHandEmoji">❔</div>
+          <div class="who">コンピュータ</div>
+        </div>
+      </div>
+      <div class="choice-row" id="choiceRow">
+        <button class="choice-btn" data-hand="rock" type="button"><img class="hand-icon" src="assets/Junken/gu.png" alt="グー"><span class="label">グー</span></button>
+        <button class="choice-btn" data-hand="scissors" type="button"><img class="hand-icon" src="assets/Junken/choki.png" alt="チョキ"><span class="label">チョキ</span></button>
+        <button class="choice-btn" data-hand="paper" type="button"><img class="hand-icon" src="assets/Junken/pa.png" alt="パー"><span class="label">パー</span></button>
+      </div>
+      <div class="result-msg" id="jankenMessage" aria-live="polite"></div>
+    </section>
+
+    <section id="duelStage" class="stage" hidden>
+      <div class="gacha-ball" id="gachaBall" hidden></div>
+      <img id="hitFlash" class="hit-flash" src="assets/Junken/hit.png" alt="ヒット!">
+      <div class="duel-row" id="duelRow"></div>
+      <div class="duel-action-row" id="duelActionRow">
+        <button id="attackIconBtn" type="button" class="duel-icon-btn"><img src="assets/Junken/Glove.png" alt="グローブ(攻撃)"><span class="label">攻撃</span></button>
+        <button id="defendIconBtn" type="button" class="duel-icon-btn"><img src="assets/Junken/gear.png" alt="ミット(防御)"><span class="label">防御</span></button>
+      </div>
+      <div class="result-msg" id="duelMessage" aria-live="polite"></div>
+    </section>
+
+    <div class="interval-countdown" id="intervalCountdown" hidden></div>
+    <div class="item-popup-backdrop" id="itemPopupBackdrop" hidden></div>
+    <div class="item-popup" id="itemPopup" hidden>
+      <div class="item-popup-icon" id="itemPopupIcon"></div>
+      <div class="item-popup-name" id="itemPopupName"></div>
+      <div class="item-popup-desc" id="itemPopupDesc"></div>
+      <button class="item-popup-close" id="itemPopupCloseBtn" type="button">OK</button>
+    </div>
+
+    <div id="resultBanner" class="result-banner" hidden></div>
+    <div id="resultTicker" class="result-ticker" hidden>
+      <span class="ticker-text" id="resultTickerText"></span>
+    </div>
+    <div id="jankenStats" class="janken-stats" hidden></div>
+    <img id="winnerImage" class="result-image" src="assets/Junken/winner.png" alt="勝利!" hidden>
+    <img id="loserImage" class="result-image" src="assets/Junken/loser.png" alt="敗北…" hidden>
+  </main>
+
+  <div id="pauseOverlay" class="pause-overlay" hidden>⏸ 一時停止中</div>
+
+  <dialog id="helpDialog" class="help-dialog">
+    <h2>遊び方</h2>
+
+    <h3>1. じゃんけん</h3>
+    <p>「ジャン」「ケン」の表示中にグー・チョキ・パーを選んでください。「ポン!」が表示された瞬間に選択がロックされ、相手の手が見えてから出す「後出し」はできません。何も選ばずに「ポン!」を迎えると、その回はコンピュータの勝ちになります。あいこの場合はスコアを変えずにやり直します。</p>
+
+    <h3>2. グローブとミット</h3>
+    <p>じゃんけんに勝った方が🥊攻撃側、負けた方が🧤防御側になります。どちらが画面の左右どちらに表示されるかは毎回ランダムです。</p>
+
+    <h3>3. スピード勝負</h3>
+    <p>合図を待つ必要はありません。じゃんけんで役割が決まったら、直ちに行動に移してください。攻撃側のあなたはすぐにグローブのアイコンを、防御側のあなたはすぐにミットのアイコンを押してください。自分の役割と違うアイテムを選ぶとその時点で負けになるので注意してください。攻撃側の反応が防御側の反応より速ければ攻撃が命中し、1勝が入ります。攻撃が命中するとヒット画像が表示されます。防御側が防いだ場合(ガード・回避)は無効試合となり、勝敗はつかずにじゃんけんからやり直しになります。</p>
+
+    <h3>4. 勝敗</h3>
+    <p>あいこや無効試合はノーカウントでやり直し、命中したときだけ1勝が記録されます。どちらかが先に3勝した時点で勝負が決まります。コンピュータの反応速度は3段階から選べます(速いほど強敵です)。</p>
+
+    <h3>5. キーボード操作</h3>
+    <p>スペースキーで一時停止/再開。じゃんけんは ←(グー) ↑(チョキ) →(パー)。攻撃/防御の選択は ←(左側のアイテム) →(右側のアイテム) で操作できます。</p>
+
+    <h3>6. ガチャボール</h3>
+    <p>勝敗がついた後のインターバル中、まれにガチャボールが転がってくることがあります。クリックして捕まえると中からアイテムが出現し、効果が発動します。アイテムはそれぞれ1回のみ有効です。</p>
+
+    <button id="closeHelpBtn" type="button">閉じる</button>
+  </dialog>
+
+  <script>
+const HANDS = [
+  { key: "rock", label: "グー", emoji: "✊", beats: "scissors" },
+  { key: "scissors", label: "チョキ", emoji: "✌️", beats: "paper" },
+  { key: "paper", label: "パー", emoji: "✋", beats: "rock" }
+];
+const MODES = {
+  1: { label: "Level1(Slow)", min: 550, max: 950 },
+  2: { label: "Level2(Normal)", min: 320, max: 620 },
+  3: { label: "Level3(Fast)", min: 130, max: 360 }
+};
+let WINS_TO_WIN = 3;
+const INTERVAL_COUNT = 8;
+const PLAYER_WIN_INTERVAL_COUNT = 3;
+const ITEMS = {
+  timer: { emoji: "⏱️", name: "タイマー", desc: "次のじゃんけんで、後出しが有効になる" },
+  towel: { emoji: "🏳️", name: "タオル", desc: "タオル投入された。テクニカルノックアウトで試合に敗北…" },
+  finger: { emoji: "🤙", name: "特急呪物の指", desc: "呪いにより、次のじゃんけんは必ず勝つ" },
+  pebble: { emoji: "🪨", name: "小石", desc: "カウンター炸裂、ノックダウンで試合終了！" },
+  money: { emoji: "💰", name: "札束", desc: "ファイトマネーが増え、ワンラウンド追加！" }
+};
+
+let mode = 2;
+let playerWins = 0;
+let computerWins = 0;
+let jankenPlayerWins = 0;
+let jankenComputerWins = 0;
+let jankenDraws = 0;
+let attackAttempts = 0;
+let attackHits = 0;
+let defendAttempts = 0;
+let defendSuccesses = 0;
+let playerChoice = null;
+let choiceLocked = false;
+let phase = "idle";
+let attackerSide = null;
+let duelStartTime = 0;
+let duelResolved = false;
+let computerAttackTimerId = null;
+let pendingTimers = [];
+let isPaused = false;
+let pauseStartedAt = 0;
+let savedChoiceButtonsEnabled = false;
+let savedDuelActionEnabled = false;
+let usedItems = new Set();
+let collectedItems = [];
+let pendingLateShow = false;
+let pendingAutoWinJanken = false;
+let pendingCounterKnockdown = false;
+let awaitingLateChoice = false;
+let precomputedCompChoice = null;
+let gachaCaught = false;
+let gachaAvailableItems = null;
+
+const countdownTextEl = document.getElementById("countdownText");
+const computerHandEmojiEl = document.getElementById("computerHandEmoji");
+const choiceRowEl = document.getElementById("choiceRow");
+const jankenMessageEl = document.getElementById("jankenMessage");
+const jankenStageEl = document.getElementById("jankenStage");
+const duelStageEl = document.getElementById("duelStage");
+const duelRowEl = document.getElementById("duelRow");
+const hitFlashEl = document.getElementById("hitFlash");
+const gameEl = document.querySelector(".game");
+const attackIconBtn = document.getElementById("attackIconBtn");
+const defendIconBtn = document.getElementById("defendIconBtn");
+const duelActionRowEl = document.getElementById("duelActionRow");
+const duelMessageEl = document.getElementById("duelMessage");
+const intervalCountdownEl = document.getElementById("intervalCountdown");
+const gachaBallEl = document.getElementById("gachaBall");
+const collectedItemsEl = document.getElementById("collectedItemsRow");
+const itemPopupBackdropEl = document.getElementById("itemPopupBackdrop");
+const itemPopupEl = document.getElementById("itemPopup");
+const itemPopupIconEl = document.getElementById("itemPopupIcon");
+const itemPopupNameEl = document.getElementById("itemPopupName");
+const itemPopupDescEl = document.getElementById("itemPopupDesc");
+const itemPopupCloseBtn = document.getElementById("itemPopupCloseBtn");
+let itemPopupTimer = null;
+
+function closeItemPopup() {
+  itemPopupEl.hidden = true;
+  itemPopupBackdropEl.hidden = true;
+  cancelTimer(itemPopupTimer);
+  itemPopupTimer = null;
+}
+itemPopupCloseBtn.addEventListener("click", closeItemPopup);
+itemPopupBackdropEl.addEventListener("click", closeItemPopup);
+
+function showItemPopup(item, opts) {
+  const justGot = !!(opts && opts.justGot);
+  itemPopupIconEl.textContent = item.emoji;
+  itemPopupNameEl.textContent = justGot ? `${item.name} をゲット!` : item.name;
+  itemPopupDescEl.textContent = item.desc;
+  itemPopupBackdropEl.hidden = false;
+  itemPopupEl.hidden = false;
+  cancelTimer(itemPopupTimer);
+  itemPopupTimer = after(justGot ? 2200 : 3200, closeItemPopup);
+}
+const playerScoreEl = document.getElementById("playerScore");
+const computerScoreEl = document.getElementById("computerScore");
+const roundTagEl = document.getElementById("roundTag");
+const resultBannerEl = document.getElementById("resultBanner");
+const jankenStatsEl = document.getElementById("jankenStats");
+const resultTickerEl = document.getElementById("resultTicker");
+const resultTickerTextEl = document.getElementById("resultTickerText");
+const winnerImageEl = document.getElementById("winnerImage");
+const loserImageEl = document.getElementById("loserImage");
+const restartBtn = document.getElementById("restartBtn");
+const exitBtn = document.getElementById("exitBtn");
+const soundToggleBtn = document.getElementById("soundToggleBtn");
+const themeToggleBtn = document.getElementById("themeToggleBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const pauseOverlayEl = document.getElementById("pauseOverlay");
+const helpBtn = document.getElementById("helpBtn");
+const helpDialog = document.getElementById("helpDialog");
+const closeHelpBtn = document.getElementById("closeHelpBtn");
+const modeSliderEl = document.getElementById("modeSlider");
+const modeLabelEl = document.getElementById("modeLabel");
+
+let soundEnabled = localStorage.getItem("janken_duel_sound_enabled") !== "false";
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function beep(freq, dur, type, gainValue) {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = type || "square";
+  osc.frequency.setValueAtTime(freq, now);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(gainValue || 0.2, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + dur);
+}
+
+function playTick() { beep(520, 0.12, "square", 0.15); }
+function playReveal() { beep(760, 0.18, "triangle", 0.2); }
+function playHit() { beep(920, 0.22, "sawtooth", 0.22); }
+function playMiss() { beep(200, 0.22, "sine", 0.18); }
+function playFanfare() {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+    const start = i * 0.16;
+    const dur = i === 3 ? 0.6 : 0.16;
+    const osc = ctx.createOscillator();
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(freq, now + start);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, now + start);
+    gain.gain.exponentialRampToValueAtTime(0.25, now + start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + start);
+    osc.stop(now + start + dur + 0.05);
+  });
+}
+
+function playBuzzer() {
+  if (!soundEnabled) return;
+  const ctx = getAudioContext();
+  const now = ctx.currentTime;
+  [0, 0.14].forEach((offset) => {
+    const osc = ctx.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(110, now + offset);
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.25, now + offset);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.16);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now + offset);
+    osc.stop(now + offset + 0.17);
+  });
+}
+
+function updateSoundToggleUI() {
+  soundToggleBtn.textContent = soundEnabled ? "🔊" : "🔇";
+  soundToggleBtn.title = soundEnabled ? "効果音: ON" : "効果音: OFF";
+  soundToggleBtn.classList.toggle("off", !soundEnabled);
+}
+soundToggleBtn.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  localStorage.setItem("janken_duel_sound_enabled", String(soundEnabled));
+  if (soundEnabled) getAudioContext();
+  updateSoundToggleUI();
+});
+updateSoundToggleUI();
+
+let darkMode = localStorage.getItem("janken_duel_dark_mode") === "true";
+function updateThemeUI() {
+  themeToggleBtn.textContent = darkMode ? "☀️" : "🌙";
+  themeToggleBtn.title = darkMode ? "ダークモード: ON" : "ダークモード: OFF";
+  themeToggleBtn.classList.toggle("off", !darkMode);
+  document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
+}
+themeToggleBtn.addEventListener("click", () => {
+  darkMode = !darkMode;
+  localStorage.setItem("janken_duel_dark_mode", String(darkMode));
+  updateThemeUI();
+});
+updateThemeUI();
+
+function updatePauseUI() {
+  pauseBtn.textContent = isPaused ? "▶" : "⏸";
+  pauseBtn.title = isPaused ? "再開" : "一時停止";
+  pauseBtn.setAttribute("aria-label", isPaused ? "再開" : "一時停止");
+  pauseOverlayEl.hidden = !isPaused;
+}
+
+function pauseGame() {
+  if (isPaused || phase === "idle" || phase === "over") return;
+  isPaused = true;
+  pauseStartedAt = performance.now();
+  pendingTimers.forEach((timer) => {
+    clearTimeout(timer.timeoutId);
+    timer.remaining = Math.max(0, timer.remaining - (performance.now() - timer.startedAt));
+  });
+  savedChoiceButtonsEnabled = !choiceRowEl.querySelector(".choice-btn").disabled;
+  savedDuelActionEnabled = !attackIconBtn.disabled;
+  setChoiceButtonsEnabled(false);
+  attackIconBtn.disabled = true;
+  defendIconBtn.disabled = true;
+  if (!gachaBallEl.hidden) gachaBallEl.style.animationPlayState = "paused";
+  updatePauseUI();
+}
+
+function resumeGame() {
+  if (!isPaused) return;
+  isPaused = false;
+  const pausedDuration = performance.now() - pauseStartedAt;
+  if (phase === "duel") duelStartTime += pausedDuration;
+  pendingTimers.forEach((timer) => armTimer(timer));
+  setChoiceButtonsEnabled(savedChoiceButtonsEnabled);
+  attackIconBtn.disabled = !savedDuelActionEnabled;
+  defendIconBtn.disabled = !savedDuelActionEnabled;
+  if (!gachaBallEl.hidden) gachaBallEl.style.animationPlayState = "running";
+  updatePauseUI();
+}
+
+pauseBtn.addEventListener("click", () => {
+  if (isPaused) resumeGame();
+  else pauseGame();
+});
+
+helpBtn.addEventListener("click", () => helpDialog.showModal());
+closeHelpBtn.addEventListener("click", () => helpDialog.close());
+helpDialog.addEventListener("click", (e) => {
+  if (e.target === helpDialog) helpDialog.close();
+});
+
+function updateModeUI() {
+  modeSliderEl.value = String(mode);
+  modeLabelEl.textContent = MODES[mode].label;
+}
+modeSliderEl.addEventListener("input", () => {
+  mode = Number(modeSliderEl.value);
+  updateModeUI();
+});
+updateModeUI();
+
+function armTimer(timer) {
+  timer.startedAt = performance.now();
+  timer.timeoutId = setTimeout(() => {
+    pendingTimers = pendingTimers.filter((t) => t !== timer);
+    timer.fn();
+  }, timer.remaining);
+}
+
+function after(ms, fn) {
+  const timer = { fn, remaining: ms, timeoutId: null, startedAt: null };
+  pendingTimers.push(timer);
+  armTimer(timer);
+  return timer;
+}
+
+function cancelTimer(timer) {
+  if (!timer) return;
+  clearTimeout(timer.timeoutId);
+  pendingTimers = pendingTimers.filter((t) => t !== timer);
+}
+
+function clearPendingTimers() {
+  pendingTimers.forEach((timer) => clearTimeout(timer.timeoutId));
+  pendingTimers = [];
+  computerAttackTimerId = null;
+}
+
+function randRange(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+function judgeJanken(p, c) {
+  if (p === c) return "draw";
+  const pDef = HANDS.find((h) => h.key === p);
+  return pDef.beats === c ? "player" : "computer";
+}
+
+function updateScoreboard() {
+  playerScoreEl.textContent = "🏆".repeat(playerWins);
+  computerScoreEl.textContent = "🏆".repeat(computerWins);
+}
+
+function updateRoundTag() {
+  roundTagEl.textContent = `${WINS_TO_WIN}本先取で勝利`;
+}
+
+function renderCollectedItems() {
+  collectedItemsEl.innerHTML = "";
+  collectedItems.forEach((key) => {
+    const item = ITEMS[key];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "collected-item-btn";
+    btn.textContent = item.emoji;
+    btn.setAttribute("aria-label", item.name);
+    btn.addEventListener("click", () => showItemPopup(item, { justGot: false }));
+    collectedItemsEl.appendChild(btn);
+  });
+}
+
+function setChoiceButtonsEnabled(enabled) {
+  choiceRowEl.querySelectorAll(".choice-btn").forEach((btn) => {
+    btn.disabled = !enabled;
+  });
+}
+
+function chooseHand(key) {
+  if (choiceLocked || phase !== "choose") return;
+  playerChoice = key;
+  choiceRowEl.querySelectorAll(".choice-btn").forEach((btn) => {
+    btn.classList.toggle("selected", btn.dataset.hand === key);
+  });
+  if (awaitingLateChoice) {
+    awaitingLateChoice = false;
+    choiceLocked = true;
+    setChoiceButtonsEnabled(false);
+    revealJanken();
+  }
+}
+choiceRowEl.querySelectorAll(".choice-btn").forEach((btn) => {
+  btn.addEventListener("click", () => chooseHand(btn.dataset.hand));
+});
+
+function startRound() {
+  jankenStageEl.hidden = false;
+  duelStageEl.hidden = true;
+  duelMessageEl.textContent = "";
+  playerChoice = null;
+  choiceLocked = false;
+  awaitingLateChoice = false;
+  phase = "choose";
+  pauseBtn.disabled = false;
+  computerHandEmojiEl.textContent = "❔";
+  jankenMessageEl.textContent = "";
+  choiceRowEl.querySelectorAll(".choice-btn").forEach((btn) => btn.classList.remove("selected"));
+  setChoiceButtonsEnabled(true);
+  updateScoreboard();
+
+  precomputedCompChoice = null;
+  if (pendingLateShow) {
+    precomputedCompChoice = HANDS[Math.floor(Math.random() * HANDS.length)].key;
+    const precomputedDef = HANDS.find((h) => h.key === precomputedCompChoice);
+    computerHandEmojiEl.textContent = precomputedDef.emoji;
+    jankenMessageEl.textContent = "⏱️ 後出し可能! コンピュータの手が見えている!";
+  }
+
+  runCountdown();
+}
+
+function runCountdown() {
+  countdownTextEl.textContent = "ジャン";
+  playTick();
+  after(700, () => {
+    countdownTextEl.textContent = "ケン";
+    playTick();
+  });
+  after(1400, () => {
+    countdownTextEl.textContent = "ポン!";
+    playReveal();
+    if (pendingLateShow && !playerChoice) {
+      awaitingLateChoice = true;
+      return;
+    }
+    choiceLocked = true;
+    setChoiceButtonsEnabled(false);
+    revealJanken();
+  });
+}
+
+function revealJanken() {
+  phase = "reveal";
+  const compChoice = pendingLateShow && precomputedCompChoice ? precomputedCompChoice : HANDS[Math.floor(Math.random() * HANDS.length)].key;
+  pendingLateShow = false;
+  precomputedCompChoice = null;
+  const forcedWin = pendingAutoWinJanken;
+  pendingAutoWinJanken = false;
+  const compDef = HANDS.find((h) => h.key === compChoice);
+  computerHandEmojiEl.textContent = compDef.emoji;
+  if (!playerChoice) {
+    if (forcedWin) {
+      jankenMessageEl.textContent = "呪物の指の力で強制勝利!";
+      jankenPlayerWins += 1;
+      after(1400, () => resolveJanken("player"));
+      return;
+    }
+    jankenMessageEl.textContent = "選択できませんでした…コンピュータの勝ち。";
+    jankenComputerWins += 1;
+    after(1400, () => resolveJanken("computer"));
+    return;
+  }
+  const rawResult = judgeJanken(playerChoice, compChoice);
+  const result = forcedWin ? "player" : rawResult;
+  if (result === "draw") {
+    jankenMessageEl.textContent = "あいこでしょ!";
+    jankenDraws += 1;
+    after(1100, startRound);
+    return;
+  }
+  if (result === "player") jankenPlayerWins += 1;
+  else jankenComputerWins += 1;
+  jankenMessageEl.textContent = forcedWin && rawResult !== "player" ? "呪物の指の力で強制勝利!" : (result === "player" ? "あなたの勝ち!" : "コンピュータの勝ち!");
+  after(1300, () => resolveJanken(result));
+}
+
+function resolveJanken(result) {
+  attackerSide = result === "player" ? "player" : "computer";
+  startDuel();
+}
+
+function buildDuelPanel(who, role) {
+  const panel = document.createElement("div");
+  panel.className = "duel-panel";
+  const whoEl = document.createElement("div");
+  whoEl.className = "who";
+  whoEl.textContent = who;
+  const roleEl = document.createElement("div");
+  roleEl.className = "role";
+  roleEl.textContent = role === "attacker" ? "🥊 攻撃側" : "🧤 防御側";
+  panel.appendChild(whoEl);
+  panel.appendChild(roleEl);
+  return panel;
+}
+
+function startDuel() {
+  phase = "duel";
+  duelResolved = false;
+  jankenStageEl.hidden = true;
+  duelStageEl.hidden = false;
+  hitFlashEl.classList.remove("show");
+  duelRowEl.innerHTML = "";
+
+  const playerLeft = Math.random() < 0.5;
+  const playerPanel = buildDuelPanel("あなた", attackerSide === "player" ? "attacker" : "defender");
+  const computerPanel = buildDuelPanel("コンピュータ", attackerSide === "computer" ? "attacker" : "defender");
+  if (playerLeft) {
+    duelRowEl.appendChild(playerPanel);
+    duelRowEl.appendChild(computerPanel);
+  } else {
+    duelRowEl.appendChild(computerPanel);
+    duelRowEl.appendChild(playerPanel);
+  }
+
+  if (Math.random() < 0.5) {
+    duelActionRowEl.appendChild(attackIconBtn);
+    duelActionRowEl.appendChild(defendIconBtn);
+  } else {
+    duelActionRowEl.appendChild(defendIconBtn);
+    duelActionRowEl.appendChild(attackIconBtn);
+  }
+
+  duelMessageEl.textContent = "直ちに行動しろ! 選択を間違えると負けになるぞ。";
+  attackIconBtn.onclick = () => onIconClick("attack");
+  defendIconBtn.onclick = () => onIconClick("defend");
+  attackIconBtn.disabled = false;
+  defendIconBtn.disabled = false;
+
+  duelStartTime = performance.now();
+  if (attackerSide === "computer") {
+    const compDelay = randRange(MODES[mode].min, MODES[mode].max);
+    computerAttackTimerId = after(compDelay, () => resolveDuel("computerAttackLanded"));
+  }
+}
+
+function onIconClick(kind) {
+  if (phase !== "duel") return;
+  const correctKind = attackerSide === "player" ? "attack" : "defend";
+  if (kind !== correctKind) {
+    resolveDuel("playerWrongItem");
+    return;
+  }
+  if (kind === "attack") {
+    const reactionMs = performance.now() - duelStartTime;
+    const compThreshold = randRange(MODES[mode].min, MODES[mode].max);
+    if (reactionMs < compThreshold) {
+      resolveDuel("playerAttackLanded", reactionMs);
+    } else {
+      resolveDuel("playerAttackMissed", reactionMs);
+    }
+  } else {
+    if (computerAttackTimerId) {
+      cancelTimer(computerAttackTimerId);
+      computerAttackTimerId = null;
+    }
+    const reactionMs = performance.now() - duelStartTime;
+    resolveDuel("playerDodged", reactionMs);
+  }
+}
+
+function showHitFlash() {
+  hitFlashEl.classList.remove("show");
+  void hitFlashEl.offsetWidth;
+  hitFlashEl.classList.add("show");
+}
+
+function runIntervalCountdown(seconds, onDone, totalSeconds = seconds) {
+  intervalCountdownEl.hidden = false;
+  intervalCountdownEl.textContent = String(seconds);
+  if (seconds === totalSeconds) {
+    maybeSpawnGachaBall(totalSeconds);
+  }
+  after(1500, () => {
+    if (seconds > 1) {
+      runIntervalCountdown(seconds - 1, onDone, totalSeconds);
+    } else {
+      intervalCountdownEl.hidden = true;
+      onDone();
+    }
+  });
+}
+
+function maybeSpawnGachaBall(totalSeconds) {
+  const availableItems = Object.keys(ITEMS).filter((key) => !usedItems.has(key));
+  if (availableItems.length === 0) return;
+  if (Math.random() >= 0.5) return;
+  const delay = randRange(300, Math.max(300, (totalSeconds - 3) * 1500));
+  after(delay, () => spawnGachaBall(availableItems));
+}
+
+function spawnGachaBall(availableItems) {
+  if (duelStageEl.hidden) return;
+  gachaCaught = false;
+  gachaAvailableItems = availableItems;
+  gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  gachaBallEl.style.animationPlayState = "";
+  void gachaBallEl.offsetWidth;
+  const ltr = Math.random() < 0.5;
+  gachaBallEl.classList.add(ltr ? "rolling-ltr" : "rolling-rtl");
+  gachaBallEl.hidden = false;
+  gachaBallEl.onclick = () => catchGachaBall(availableItems);
+  gachaBallEl.ontouchstart = (e) => {
+    e.preventDefault();
+    catchGachaBall(availableItems);
+  };
+}
+
+gachaBallEl.addEventListener("animationend", () => {
+  if (!gachaCaught) {
+    gachaBallEl.hidden = true;
+    gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  }
+});
+
+function catchGachaBall(availableItems) {
+  if (gachaCaught) return;
+  gachaCaught = true;
+  gachaBallEl.hidden = true;
+  gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  const key = availableItems[Math.floor(Math.random() * availableItems.length)];
+  usedItems.add(key);
+  collectedItems.push(key);
+  renderCollectedItems();
+  applyItemEffect(key);
+}
+
+function applyItemEffect(key) {
+  const item = ITEMS[key];
+  playReveal();
+  showItemPopup(item, { justGot: true });
+
+  if (key === "timer") {
+    pendingLateShow = true;
+  } else if (key === "finger") {
+    pendingAutoWinJanken = true;
+  } else if (key === "towel") {
+    loseMatchByTKO();
+  } else if (key === "pebble") {
+    pendingCounterKnockdown = true;
+  } else if (key === "money") {
+    WINS_TO_WIN += 1;
+    updateRoundTag();
+  }
+}
+
+function loseMatchByTKO() {
+  clearPendingTimers();
+  gachaBallEl.hidden = true;
+  gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  intervalCountdownEl.hidden = true;
+  endMatch("lose");
+}
+
+function spinScreen() {
+  gameEl.classList.remove("spin");
+  void gameEl.offsetWidth;
+  gameEl.classList.add("spin");
+}
+
+function resolveDuel(outcome) {
+  if (duelResolved) return;
+  duelResolved = true;
+  if (computerAttackTimerId) {
+    cancelTimer(computerAttackTimerId);
+    computerAttackTimerId = null;
+  }
+  attackIconBtn.disabled = true;
+  defendIconBtn.disabled = true;
+
+  let decisive = false;
+  let counterKO = false;
+  switch (outcome) {
+    case "playerAttackLanded":
+      playerWins += 1;
+      decisive = true;
+      attackAttempts += 1;
+      attackHits += 1;
+      playHit();
+      showHitFlash();
+      if (pendingCounterKnockdown) {
+        pendingCounterKnockdown = false;
+        counterKO = true;
+        duelMessageEl.textContent = "🪨 カウンター炸裂! ノックダウンで勝利!!";
+      } else {
+        duelMessageEl.textContent = "命中! あなたの１勝！";
+      }
+      break;
+    case "playerAttackMissed":
+      attackAttempts += 1;
+      playMiss();
+      duelMessageEl.textContent = "ガードされた…!";
+      break;
+    case "computerAttackLanded":
+      computerWins += 1;
+      decisive = true;
+      defendAttempts += 1;
+      playHit();
+      spinScreen();
+      duelMessageEl.textContent = "命中! コンピュータの１勝！";
+      break;
+    case "playerDodged":
+      defendAttempts += 1;
+      defendSuccesses += 1;
+      playMiss();
+      duelMessageEl.textContent = "うまく避けた！";
+      break;
+    case "playerWrongItem":
+      computerWins += 1;
+      decisive = true;
+      playBuzzer();
+      duelMessageEl.textContent = "ミス！";
+      break;
+  }
+
+  // the counter effect only gets one shot: if this duel didn't trigger it
+  // (guarded attack, wrong selection, dodged/hit as defender, etc.), it's spent.
+  if (pendingCounterKnockdown) {
+    pendingCounterKnockdown = false;
+  }
+
+  updateScoreboard();
+  if (decisive) {
+    if (counterKO) {
+      clearPendingTimers();
+      intervalCountdownEl.hidden = true;
+      after(1700, () => endMatch("counterko"));
+    } else if (playerWins >= WINS_TO_WIN || computerWins >= WINS_TO_WIN) {
+      after(1700, endMatch);
+    } else {
+      const count = outcome === "playerAttackLanded" ? PLAYER_WIN_INTERVAL_COUNT : INTERVAL_COUNT;
+      runIntervalCountdown(count, startRound);
+    }
+  } else {
+    after(1700, startRound);
+  }
+}
+
+function endMatch(forcedResult) {
+  phase = "over";
+  pauseBtn.disabled = true;
+  jankenStageEl.hidden = true;
+  duelStageEl.hidden = true;
+  resultBannerEl.hidden = false;
+  if (forcedResult === "lose") {
+    resultBannerEl.className = "result-banner lose";
+    resultBannerEl.textContent = `😢🏳️ タオル投入…テクニカルノックアウトでコンピュータの勝ち (${playerWins} - ${computerWins})`;
+    loserImageEl.hidden = false;
+    resultTickerTextEl.textContent = "You are Loser!";
+    resultTickerEl.className = "result-ticker lose";
+    resultTickerEl.hidden = false;
+  } else if (forcedResult === "win" || forcedResult === "counterko" || playerWins > computerWins) {
+    resultBannerEl.className = "result-banner win";
+    resultBannerEl.textContent = forcedResult === "counterko"
+      ? `🎉🪨 カウンター炸裂! ノックダウンであなたの勝ち! (${playerWins} - ${computerWins})`
+      : forcedResult === "win"
+      ? `🎉🏳️ テクニカルノックアウト! あなたの勝ち! (${playerWins} - ${computerWins})`
+      : `🎉 あなたの勝ち！ (${playerWins} - ${computerWins})`;
+    winnerImageEl.hidden = false;
+    resultTickerTextEl.textContent = "You are Winner!";
+    resultTickerEl.className = "result-ticker win";
+    resultTickerEl.hidden = false;
+    playFanfare();
+  } else if (computerWins > playerWins) {
+    resultBannerEl.className = "result-banner lose";
+    resultBannerEl.textContent = `😢 コンピュータの勝ち… (${playerWins} - ${computerWins})`;
+    loserImageEl.hidden = false;
+    resultTickerTextEl.textContent = "You are Loser!";
+    resultTickerEl.className = "result-ticker lose";
+    resultTickerEl.hidden = false;
+  } else {
+    resultBannerEl.className = "result-banner draw";
+    resultBannerEl.textContent = `🤝 引き分け (${playerWins} - ${computerWins})`;
+  }
+
+  const jankenTotal = jankenPlayerWins + jankenComputerWins;
+  const jankenWinRate = jankenTotal > 0 ? Math.round((jankenPlayerWins / jankenTotal) * 100) : 0;
+  const drawSuffix = jankenDraws > 0 ? `${jankenDraws}分` : "";
+  const attackHitRate = attackAttempts > 0 ? Math.round((attackHits / attackAttempts) * 100) : 0;
+  const defendSuccessRate = defendAttempts > 0 ? Math.round((defendSuccesses / defendAttempts) * 100) : 0;
+  jankenStatsEl.innerHTML = `
+    <div>じゃんけん勝率: ${jankenWinRate}% (${jankenPlayerWins}勝${jankenComputerWins}敗${drawSuffix})</div>
+    <div>攻撃ヒット率: ${attackHitRate}% (${attackHits}/${attackAttempts})</div>
+    <div>防御成功率: ${defendSuccessRate}% (${defendSuccesses}/${defendAttempts})</div>
+  `;
+  jankenStatsEl.hidden = false;
+}
+
+function restartGame() {
+  clearPendingTimers();
+  isPaused = false;
+  updatePauseUI();
+  WINS_TO_WIN = 3;
+  updateRoundTag();
+  playerWins = 0;
+  computerWins = 0;
+  jankenPlayerWins = 0;
+  jankenComputerWins = 0;
+  jankenDraws = 0;
+  attackAttempts = 0;
+  attackHits = 0;
+  defendAttempts = 0;
+  defendSuccesses = 0;
+  usedItems = new Set();
+  collectedItems = [];
+  renderCollectedItems();
+  pendingLateShow = false;
+  pendingAutoWinJanken = false;
+  pendingCounterKnockdown = false;
+  precomputedCompChoice = null;
+  gachaCaught = false;
+  gachaBallEl.hidden = true;
+  gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  gachaBallEl.style.animationPlayState = "";
+  itemPopupEl.hidden = true;
+  itemPopupBackdropEl.hidden = true;
+  resultBannerEl.hidden = true;
+  jankenStatsEl.hidden = true;
+  winnerImageEl.hidden = true;
+  loserImageEl.hidden = true;
+  resultTickerEl.hidden = true;
+  startRound();
+}
+
+restartBtn.addEventListener("click", restartGame);
+exitBtn.addEventListener("click", () => {
+  window.location.href = "index.html";
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.target === modeSliderEl) return;
+
+  if (e.key === "r" || e.key === "R") {
+    e.preventDefault();
+    restartGame();
+    return;
+  }
+
+  if ((e.key === "g" || e.key === "G") && !gachaBallEl.hidden && !gachaCaught) {
+    e.preventDefault();
+    catchGachaBall(gachaAvailableItems);
+    return;
+  }
+
+  if (e.code === "Space") {
+    e.preventDefault();
+    if (isPaused) resumeGame();
+    else pauseGame();
+    return;
+  }
+
+  if (isPaused) return;
+
+  if (phase === "choose") {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      chooseHand("rock");
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      chooseHand("scissors");
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      chooseHand("paper");
+    }
+  } else if (phase === "duel") {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      duelActionRowEl.children[0]?.click();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      duelActionRowEl.children[1]?.click();
+    }
+  }
+});
+
+restartGame();
+  </script>
+</body>
+</html>

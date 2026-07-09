@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>プテラノドンジャンプ (draft)</title>
+<style>
+:root {
+  --bg1: #cfe9f5;
+  --bg2: #eef7ec;
+  --sky-top: #bfe4f7;
+  --sky-bottom: #f3ead0;
+  --line: #cfe2f8;
+  --accent: #b0611a;
+  --text: #2a2016;
+  --surface: #ffffff;
+  --muted: #6a5a48;
+  --btn-grad-a: #f19a3e;
+  --btn-grad-b: #d97a1c;
+  --btn-border: #b0611a;
+  --danger: #c0392b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg1: #0d1b26;
+    --bg2: #14201a;
+    --sky-top: #0a2233;
+    --sky-bottom: #2a2416;
+    --line: #21456c;
+    --accent: #e6a15a;
+    --text: #ecdfc9;
+    --surface: #17232b;
+    --muted: #b7a98f;
+    --btn-grad-a: #d97a1c;
+    --btn-grad-b: #a85a12;
+    --btn-border: #e6a15a;
+    --danger: #e0685a;
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Hiragino Gothic ProN", "Yu Gothic", sans-serif;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  display: grid;
+  place-items: start center;
+  padding: 14px;
+}
+
+.game {
+  width: min(400px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(30, 20, 10, 0.18);
+  padding: 12px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.hud .lives { display: flex; gap: 3px; font-size: 16px; }
+.hud .lives .lost { opacity: 0.25; filter: grayscale(1); }
+
+.hud .score { color: var(--accent); }
+
+.power-gauge {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.power-gauge .pip {
+  width: 14px;
+  height: 8px;
+  border-radius: 3px;
+  background: #ddd3c0;
+  border: 1px solid var(--btn-border);
+}
+.power-gauge .pip.on {
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #bfe4f7;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(10, 20, 30, 0.55);
+  color: #fff;
+  text-align: center;
+  padding: 16px;
+}
+
+.overlay h2 { margin: 0; font-size: 20px; }
+.overlay p { margin: 0; font-size: 13px; line-height: 1.6; color: #eee; }
+
+button {
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-size: 14px;
+}
+button:active { filter: brightness(0.95); }
+
+.hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>🦖 プテラノドンジャンプ <span style="font-weight:400;font-size:12px;color:var(--muted);">(draft)</span></h1>
+  <div class="hud">
+    <div class="lives" id="lives"></div>
+    <div class="score" id="score">SCORE: 0</div>
+    <div class="power-gauge" id="powerGauge">
+      <div class="pip" data-i="0"></div>
+      <div class="pip" data-i="1"></div>
+    </div>
+  </div>
+  <div class="stage">
+    <canvas id="game" width="360" height="640"></canvas>
+    <div class="overlay" id="startOverlay">
+      <h2>プテラノドンジャンプ</h2>
+      <p>スペースキー（またはタップ）でジャンプ！<br>連打するほど高く飛べる。<br>岩をよけて、飛んでくるアイテムをゲットしよう。</p>
+      <button id="startBtn">スタート</button>
+    </div>
+    <div class="overlay" id="gameOverOverlay" hidden>
+      <h2>ゲームオーバー</h2>
+      <p id="finalScore">SCORE: 0</p>
+      <button id="retryBtn">もう一度</button>
+    </div>
+  </div>
+  <div class="hint">スペース／タップ：ジャンプ（連打で高くジャンプ）　左右から来るアイテムを取るとパワーアップ</div>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const GROUND_Y = 500;
+  const HORIZON_Y = 170;
+  const ROAD_TOP_W = W * 0.5;
+  const ROAD_GROUND_W = W * 0.95;
+  const PLAYER_START_X = W / 2;
+  const PLAYER_MOVE_SPEED = 300;
+  const PLAYER_EDGE_MARGIN = 26;
+  const GRAVITY = 1500;
+  const JUMP_V = 560;
+  const BOOSTS = [260, 190, 130, 80];
+  const VH_CAP = 900;
+  const MAX_LIVES = 3;
+  const MAX_POWER = 2;
+  const INVINCIBLE_TIME = 1.2;
+  const FLAP_DURATION = 0.35;
+
+  const OBSTACLE_TIERS = [
+    { clear: 70, draw: 34, color: '#8a8f86' },
+    { clear: 180, draw: 58, color: '#6f6a5a' },
+    { clear: 300, draw: 88, color: '#5a4a3a' },
+  ];
+
+  let state = 'idle'; // idle | playing | over
+  let score = 0;
+  let lives = MAX_LIVES;
+  let power = 0;
+  let invincible = 0;
+  let idlePhase = 0;
+  let flapAnim = 0;
+  const keys = { left: false, right: false };
+
+  let playerX = PLAYER_START_X;
+  let playerH = 0, playerVH = 0, grounded = true, jumpsUsed = 0;
+
+  let obstacles = [];
+  let items = [];
+  let particles = [];
+
+  let scrollSpeed = 220;
+  let obstacleTimer = 0;
+  let itemTimer = 0;
+  let elapsed = 0;
+  let lastTime = 0;
+  let tiePhases = [];
+  const TIE_CYCLE = 0.9;
+
+  function roadWidthAt(y) {
+    const t = (y - HORIZON_Y) / (GROUND_Y - HORIZON_Y);
+    return ROAD_TOP_W + (ROAD_GROUND_W - ROAD_TOP_W) * t;
+  }
+
+  function currentTravelTime() {
+    return Math.max(1.15, 2.3 - elapsed * 0.02);
+  }
+
+  const livesEl = document.getElementById('lives');
+  const scoreEl = document.getElementById('score');
+  const powerPips = document.querySelectorAll('#powerGauge .pip');
+  const startOverlay = document.getElementById('startOverlay');
+  const gameOverOverlay = document.getElementById('gameOverOverlay');
+  const finalScoreEl = document.getElementById('finalScore');
+
+  function renderHud() {
+    livesEl.innerHTML = '';
+    for (let i = 0; i < MAX_LIVES; i++) {
+      const span = document.createElement('span');
+      span.textContent = '🦖';
+      if (i >= lives) span.classList.add('lost');
+      livesEl.appendChild(span);
+    }
+    scoreEl.textContent = 'SCORE: ' + Math.floor(score);
+    powerPips.forEach((p, i) => p.classList.toggle('on', i < power));
+  }
+
+  function resetGame() {
+    score = 0;
+    lives = MAX_LIVES;
+    power = 0;
+    invincible = 0;
+    idlePhase = 0;
+    flapAnim = 0;
+    playerX = PLAYER_START_X;
+    playerH = 0; playerVH = 0; grounded = true; jumpsUsed = 0;
+    obstacles = []; items = []; particles = [];
+    scrollSpeed = 220;
+    obstacleTimer = 1.0;
+    itemTimer = 2.5;
+    elapsed = 0;
+    tiePhases = [0, 0.25, 0.5, 0.75, 1.0, 1.25];
+    renderHud();
+  }
+
+  function doJump() {
+    if (state !== 'playing') return;
+    if (grounded) {
+      playerVH = JUMP_V;
+      grounded = false;
+      jumpsUsed = 0;
+      flapAnim = 1;
+    } else if (jumpsUsed < BOOSTS.length) {
+      playerVH = Math.min(playerVH + BOOSTS[jumpsUsed], VH_CAP);
+      jumpsUsed++;
+      flapAnim = 1;
+    }
+  }
+
+  function pickTier() {
+    const difficulty = Math.min(1, elapsed / 45);
+    const r = Math.random();
+    if (r < 0.45 - difficulty * 0.25) return OBSTACLE_TIERS[0];
+    if (r < 0.8 - difficulty * 0.1) return OBSTACLE_TIERS[1];
+    return OBSTACLE_TIERS[2];
+  }
+
+  function spawnObstacle() {
+    const tier = pickTier();
+    obstacles.push({ t: 0, tier, checked: false, exitY: 0 });
+  }
+
+  function spawnItem() {
+    const fromLeft = Math.random() < 0.5;
+    const high = Math.random() < 0.5;
+    items.push({
+      x: fromLeft ? -30 : W + 30,
+      y: high ? GROUND_Y - 190 : GROUND_Y - 18,
+      vx: (fromLeft ? 1 : -1) * (140 + Math.random() * 60),
+      high,
+      collected: false,
+    });
+  }
+
+  function addParticles(x, y, color, n) {
+    for (let i = 0; i < n; i++) {
+      particles.push({
+        x, y,
+        vx: (Math.random() - 0.5) * 220,
+        vy: -Math.random() * 220 - 40,
+        life: 0.6,
+        color,
+      });
+    }
+  }
+
+  function hitPlayer(x, y) {
+    if (invincible > 0) return;
+    invincible = INVINCIBLE_TIME;
+    if (power > 0) {
+      power--;
+      addParticles(x, y, '#f19a3e', 10);
+    } else {
+      lives--;
+      addParticles(x, y, '#c0392b', 14);
+    }
+    renderHud();
+    if (lives <= 0) {
+      endGame();
+    }
+  }
+
+  function collectItem(item) {
+    item.collected = true;
+    if (power < MAX_POWER) {
+      power++;
+    } else {
+      score += 50;
+    }
+    addParticles(item.x, item.y, '#ffd25a', 12);
+    renderHud();
+  }
+
+  function endGame() {
+    state = 'over';
+    finalScoreEl.textContent = 'SCORE: ' + Math.floor(score);
+    gameOverOverlay.hidden = false;
+  }
+
+  function update(dt) {
+    elapsed += dt;
+    score += dt * 12;
+    scrollSpeed = Math.min(420, 220 + elapsed * 4.5);
+    if (invincible > 0) invincible -= dt;
+
+    // player physics
+    playerVH -= GRAVITY * dt;
+    playerH += playerVH * dt;
+    if (playerH <= 0) {
+      playerH = 0; playerVH = 0;
+      grounded = true; jumpsUsed = 0;
+    }
+    idlePhase += dt * 1.2;
+    flapAnim = Math.max(0, flapAnim - dt / FLAP_DURATION);
+
+    // horizontal movement (cursor keys), clamped to the road width
+    let moveDir = 0;
+    if (keys.left) moveDir -= 1;
+    if (keys.right) moveDir += 1;
+    playerX += moveDir * PLAYER_MOVE_SPEED * dt;
+    const bound = roadWidthAt(GROUND_Y) / 2 - PLAYER_EDGE_MARGIN;
+    playerX = Math.min(W / 2 + bound, Math.max(W / 2 - bound, playerX));
+
+    // obstacles (ground undulations approaching from the horizon)
+    obstacleTimer -= dt;
+    if (obstacleTimer <= 0) {
+      spawnObstacle();
+      obstacleTimer = Math.max(0.7, 1.6 - elapsed * 0.02) * (0.8 + Math.random() * 0.5);
+    }
+    for (const o of obstacles) {
+      if (!o.checked) {
+        o.t += dt / currentTravelTime();
+        if (o.t >= 1) {
+          o.checked = true;
+          o.exitY = GROUND_Y;
+          if (playerH < o.tier.clear - 10) {
+            hitPlayer(playerX, GROUND_Y - o.tier.draw / 2);
+          } else {
+            score += 15;
+          }
+        }
+      } else {
+        o.exitY += scrollSpeed * 1.6 * dt;
+      }
+    }
+    obstacles = obstacles.filter(o => !o.checked || o.exitY < H + 80);
+
+    // perspective road ties (purely vertical motion, no horizontal drift)
+    for (let i = 0; i < tiePhases.length; i++) {
+      tiePhases[i] += dt / TIE_CYCLE;
+      if (tiePhases[i] > 1.5) tiePhases[i] -= 1.5;
+    }
+
+    // items
+    itemTimer -= dt;
+    if (itemTimer <= 0) {
+      spawnItem();
+      itemTimer = 3 + Math.random() * 3;
+    }
+    for (const it of items) {
+      if (it.collected) continue;
+      it.x += it.vx * dt;
+      const dx = it.x - playerX;
+      const playerScreenY = GROUND_Y - playerH;
+      const dy = it.y - playerScreenY;
+      if (Math.abs(dx) < 26 && Math.abs(dy) < 42) {
+        collectItem(it);
+      }
+    }
+    items = items.filter(it => !it.collected && it.x > -60 && it.x < W + 60);
+
+    // particles
+    for (const p of particles) {
+      p.vy += 500 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.life -= dt;
+    }
+    particles = particles.filter(p => p.life > 0);
+  }
+
+  function drawBackground() {
+    // sky
+    const sky = ctx.createLinearGradient(0, 0, 0, HORIZON_Y);
+    sky.addColorStop(0, '#bfe4f7');
+    sky.addColorStop(1, '#eaf3e4');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, HORIZON_Y);
+
+    // distant hills sit still at the horizon (no scroll of their own)
+    ctx.fillStyle = '#a9c9a0';
+    ctx.beginPath();
+    ctx.moveTo(0, HORIZON_Y);
+    ctx.quadraticCurveTo(90, HORIZON_Y - 55, 200, HORIZON_Y - 20);
+    ctx.quadraticCurveTo(300, HORIZON_Y + 8, W, HORIZON_Y - 30);
+    ctx.lineTo(W, HORIZON_Y);
+    ctx.closePath();
+    ctx.fill();
+
+    // ground plane below the horizon
+    const groundFill = ctx.createLinearGradient(0, HORIZON_Y, 0, H);
+    groundFill.addColorStop(0, '#cdbb8e');
+    groundFill.addColorStop(1, '#c9a877');
+    ctx.fillStyle = groundFill;
+    ctx.fillRect(0, HORIZON_Y, W, H - HORIZON_Y);
+
+    // perspective track: narrow at the horizon, wide near the player, for depth
+    const cx = W / 2;
+    const bottomW = roadWidthAt(H);
+    ctx.fillStyle = '#d8bd85';
+    ctx.beginPath();
+    ctx.moveTo(cx - ROAD_TOP_W / 2, HORIZON_Y);
+    ctx.lineTo(cx + ROAD_TOP_W / 2, HORIZON_Y);
+    ctx.lineTo(cx + bottomW / 2, H);
+    ctx.lineTo(cx - bottomW / 2, H);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120,90,50,0.4)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // distance markers move straight down toward the player, never sideways
+    ctx.strokeStyle = 'rgba(120,90,50,0.35)';
+    ctx.lineWidth = 3;
+    for (const phase of tiePhases) {
+      let screenY;
+      if (phase <= 1) {
+        screenY = HORIZON_Y + (GROUND_Y - HORIZON_Y) * phase * phase;
+      } else {
+        const p = (phase - 1) / 0.5;
+        screenY = GROUND_Y + p * (H - GROUND_Y);
+      }
+      const w = roadWidthAt(screenY) * 0.92;
+      ctx.beginPath();
+      ctx.moveTo(cx - w / 2, screenY);
+      ctx.lineTo(cx + w / 2, screenY);
+      ctx.stroke();
+    }
+  }
+
+  function drawObstacle(o) {
+    let screenY, scale;
+    if (!o.checked) {
+      const e = o.t * o.t;
+      screenY = HORIZON_Y + (GROUND_Y - HORIZON_Y) * e;
+      scale = 0.15 + 0.85 * e;
+    } else {
+      screenY = o.exitY;
+      scale = 1 + (Math.max(0, o.exitY - GROUND_Y) / (H - GROUND_Y)) * 0.8;
+    }
+    const cx = W / 2;
+    const halfW = roadWidthAt(screenY) / 2;
+    const h = o.tier.draw * scale;
+
+    // a smooth rise in the ground itself, not a shape falling from above
+    ctx.fillStyle = o.tier.color;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW, screenY);
+    ctx.quadraticCurveTo(cx - halfW * 0.4, screenY - h, cx, screenY - h * 1.05);
+    ctx.quadraticCurveTo(cx + halfW * 0.4, screenY - h, cx + halfW, screenY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW * 0.3, screenY - h * 0.9);
+    ctx.quadraticCurveTo(cx, screenY - h * 1.05, cx + halfW * 0.3, screenY - h * 0.9);
+    ctx.stroke();
+  }
+
+  function drawItem(it) {
+    ctx.save();
+    ctx.translate(it.x, it.y);
+    const t = elapsed * 6;
+    ctx.rotate(Math.sin(t) * 0.3);
+    ctx.fillStyle = it.high ? '#7ec8e3' : '#ffd25a';
+    ctx.beginPath();
+    ctx.moveTo(0, -14);
+    for (let i = 0; i < 5; i++) {
+      const a1 = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+      const a2 = a1 + Math.PI / 5;
+      ctx.lineTo(Math.cos(a1) * 14, Math.sin(a1) * 14);
+      ctx.lineTo(Math.cos(a2) * 6, Math.sin(a2) * 6);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#a06a10';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPteranodon(x, y, jumping, wingSpread, powerLv, blink, turnMix) {
+    if (blink) return;
+    ctx.save();
+    ctx.translate(x, y);
+
+    const auraColors = ['transparent', 'rgba(241,154,62,0.35)', 'rgba(224,104,90,0.4)'];
+    if (powerLv > 0) {
+      ctx.fillStyle = auraColors[powerLv];
+      ctx.beginPath();
+      ctx.arc(0, -30, 44, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const bodyColor = powerLv === 2 ? '#5c4534' : '#8a8170';
+    const skinColor = powerLv === 2 ? '#6b5240' : '#a89878';
+    const wingColor = powerLv >= 1 ? '#c96a2e' : '#5a5245';
+    const legLift = jumping ? 6 : 0;
+
+    function drawBackView() {
+      // tail
+      ctx.fillStyle = skinColor;
+      ctx.beginPath();
+      ctx.moveTo(-4, -6);
+      ctx.lineTo(0, 4 - legLift * 0.3);
+      ctx.lineTo(4, -6);
+      ctx.closePath();
+      ctx.fill();
+
+      // wings folded along the back, spreading outward only when flapping
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.scale(side, 1);
+        const outX = 10 + wingSpread * 30;
+        const outY = -26 - wingSpread * 16;
+        ctx.fillStyle = wingColor;
+        ctx.beginPath();
+        ctx.moveTo(4, -30);
+        ctx.quadraticCurveTo(outX * 0.6, -34 - wingSpread * 8, outX, outY);
+        ctx.quadraticCurveTo(outX * 0.7, -14, 6, -8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath();
+        ctx.moveTo(4, -30);
+        ctx.lineTo(outX, outY);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // body, seen from behind
+      ctx.fillStyle = bodyColor;
+      ctx.beginPath();
+      ctx.ellipse(0, -20, 14, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // legs
+      ctx.strokeStyle = skinColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-6, -3); ctx.lineTo(-6, 8 - legLift);
+      ctx.moveTo(6, -3); ctx.lineTo(6, 8 - legLift);
+      ctx.stroke();
+      ctx.fillStyle = skinColor;
+      ctx.beginPath();
+      ctx.moveTo(-9, 8 - legLift); ctx.lineTo(-6, 12 - legLift); ctx.lineTo(-3, 8 - legLift);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(3, 8 - legLift); ctx.lineTo(6, 12 - legLift); ctx.lineTo(9, 8 - legLift);
+      ctx.fill();
+
+      // back of head + crest, swept up and back
+      ctx.fillStyle = skinColor;
+      ctx.beginPath();
+      ctx.ellipse(0, -38, 7, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(-4, -42);
+      ctx.quadraticCurveTo(-2, -56, 2, -60);
+      ctx.quadraticCurveTo(4, -50, 4, -42);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawFrontView() {
+      // sheepish half-raised wings
+      for (const side of [-1, 1]) {
+        ctx.save();
+        ctx.scale(side, 1);
+        ctx.fillStyle = wingColor;
+        ctx.beginPath();
+        ctx.moveTo(6, -28);
+        ctx.quadraticCurveTo(22, -34, 30, -14);
+        ctx.quadraticCurveTo(18, -8, 7, -10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // body
+      ctx.fillStyle = bodyColor;
+      ctx.beginPath();
+      ctx.ellipse(0, -20, 14, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // legs
+      ctx.strokeStyle = skinColor;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(-6, -3); ctx.lineTo(-6, 8);
+      ctx.moveTo(6, -3); ctx.lineTo(6, 8);
+      ctx.stroke();
+
+      // head + crest, facing the camera
+      ctx.fillStyle = skinColor;
+      ctx.beginPath();
+      ctx.moveTo(-3, -40);
+      ctx.quadraticCurveTo(-2, -58, 3, -60);
+      ctx.quadraticCurveTo(6, -48, 4, -40);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(0, -38, 8, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // small foreshortened beak
+      ctx.fillStyle = '#3a352c';
+      ctx.beginPath();
+      ctx.moveTo(-3, -34);
+      ctx.lineTo(0, -27);
+      ctx.lineTo(3, -34);
+      ctx.closePath();
+      ctx.fill();
+
+      // bashful closed eyes
+      ctx.strokeStyle = '#1a1410';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-5, -40); ctx.quadraticCurveTo(-3, -43, -1, -40);
+      ctx.moveTo(1, -40); ctx.quadraticCurveTo(3, -43, 5, -40);
+      ctx.stroke();
+
+      // blush
+      ctx.fillStyle = 'rgba(230,110,90,0.55)';
+      ctx.beginPath();
+      ctx.arc(-6, -36, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(6, -36, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // turnMix: 0 = facing away (normal running), 1 = fully turned to face the
+    // camera (embarrassed), with a thin edge-on sliver at the midpoint.
+    const facingFront = turnMix > 0.5;
+    const poseT = facingFront ? (turnMix - 0.5) * 2 : 1 - turnMix * 2;
+    ctx.save();
+    ctx.scale(Math.max(0.06, poseT), 1);
+    if (facingFront) drawFrontView(); else drawBackView();
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = Math.max(0, p.life / 0.6);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    drawBackground();
+    for (const o of obstacles) drawObstacle(o);
+    for (const it of items) if (!it.collected) drawItem(it);
+
+    const blink = invincible > 0 && Math.floor(invincible * 12) % 2 === 0;
+    const idleSway = 0.08 + Math.sin(idlePhase) * 0.03;
+    const flapPulse = Math.sin(Math.min(flapAnim, 1) * Math.PI) * 0.85;
+    const wingSpread = idleSway + flapPulse;
+    let turnMix = 0;
+    if (invincible > 0) {
+      const p = 1 - invincible / INVINCIBLE_TIME;
+      turnMix = p < 0.5 ? p * 2 : (1 - p) * 2;
+    }
+    drawPteranodon(playerX, GROUND_Y - playerH, !grounded, wingSpread, power, blink, turnMix);
+
+    drawParticles();
+  }
+
+  function loop(ts) {
+    if (!lastTime) lastTime = ts;
+    let dt = (ts - lastTime) / 1000;
+    lastTime = ts;
+    dt = Math.min(dt, 0.05);
+
+    if (state === 'playing') update(dt);
+    draw();
+
+    requestAnimationFrame(loop);
+  }
+
+  function startGame() {
+    resetGame();
+    state = 'playing';
+    startOverlay.hidden = true;
+    gameOverOverlay.hidden = true;
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+      e.preventDefault();
+      if (e.repeat) return;
+      doJump();
+    } else if (e.code === 'ArrowLeft') {
+      e.preventDefault();
+      keys.left = true;
+    } else if (e.code === 'ArrowRight') {
+      e.preventDefault();
+      keys.right = true;
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft') keys.left = false;
+    else if (e.code === 'ArrowRight') keys.right = false;
+  });
+
+  canvas.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    doJump();
+  });
+
+  resetGame();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
