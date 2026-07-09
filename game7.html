@@ -359,6 +359,7 @@ button:disabled {
 .interval-countdown {
   font-size: 40px;
   font-weight: 900;
+  font-style: italic;
   color: var(--accent);
   text-align: center;
   background: var(--panel-bg);
@@ -743,7 +744,7 @@ button:disabled {
 
     <section id="duelStage" class="stage" hidden>
       <div class="gacha-ball" id="gachaBall" hidden></div>
-      <img id="hitFlash" class="hit-flash" src="assets/Junken/hit.png" alt="ヒット!">
+      <img id="hitFlash" class="hit-flash" src="assets/Junken/hit1.png" alt="ヒット!">
       <div class="duel-row" id="duelRow"></div>
       <div class="duel-action-row" id="duelActionRow">
         <button id="attackIconBtn" type="button" class="duel-icon-btn"><img src="assets/Junken/glove.png" alt="グローブ(攻撃)"><span class="label">攻撃</span></button>
@@ -791,7 +792,7 @@ button:disabled {
     <p>スペースキーで一時停止/再開。じゃんけんは ←(グー) ↑(チョキ) →(パー)。攻撃/防御の選択は ←(左側のアイテム) →(右側のアイテム) で操作できます。</p>
 
     <h3>6. ガチャボール</h3>
-    <p>勝敗がついた後のインターバル中、まれにガチャボールが転がってくることがあります。クリックして捕まえると中からアイテムが出現し、効果が発動します。アイテムはそれぞれ1回のみ有効です。</p>
+    <p>勝敗がついた後のインターバル中、まれにガチャボールが転がってくることがあります。クリックして捕まえると中からアイテムが出現し、効果が発動します。同じアイテムが何度出てきても構いません。</p>
 
     <button id="closeHelpBtn" type="button">閉じる</button>
   </dialog>
@@ -834,13 +835,13 @@ let phase = "idle";
 let attackerSide = null;
 let duelStartTime = 0;
 let duelResolved = false;
+let currentDuelToken = 0;
 let computerAttackTimerId = null;
 let pendingTimers = [];
 let isPaused = false;
 let pauseStartedAt = 0;
 let savedChoiceButtonsEnabled = false;
 let savedDuelActionEnabled = false;
-let usedItems = new Set();
 let collectedItems = [];
 let pendingLateShow = false;
 let pendingAutoWinJanken = false;
@@ -1153,6 +1154,12 @@ choiceRowEl.querySelectorAll(".choice-btn").forEach((btn) => {
 function startRound() {
   jankenStageEl.hidden = false;
   duelStageEl.hidden = true;
+  gachaCaught = true;
+  gachaBallEl.hidden = true;
+  gachaBallEl.onclick = null;
+  gachaBallEl.ontouchstart = null;
+  gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
+  gachaBallEl.style.animationPlayState = "";
   duelMessageEl.textContent = "";
   playerChoice = null;
   choiceLocked = false;
@@ -1179,11 +1186,11 @@ function startRound() {
 function runCountdown() {
   countdownTextEl.textContent = "ジャン";
   playTick();
-  after(700, () => {
+  after(500, () => {
     countdownTextEl.textContent = "ケン";
     playTick();
   });
-  after(1400, () => {
+  after(1000, () => {
     countdownTextEl.textContent = "ポン!";
     playReveal();
     if (pendingLateShow && !playerChoice) {
@@ -1253,6 +1260,7 @@ function buildDuelPanel(who, role) {
 function startDuel() {
   phase = "duel";
   duelResolved = false;
+  currentDuelToken += 1;
   jankenStageEl.hidden = true;
   duelStageEl.hidden = false;
   hitFlashEl.classList.remove("show");
@@ -1286,7 +1294,11 @@ function startDuel() {
   duelStartTime = performance.now();
   if (attackerSide === "computer") {
     const compDelay = randRange(MODES[mode].min, MODES[mode].max);
-    computerAttackTimerId = after(compDelay, () => resolveDuel("computerAttackLanded"));
+    const duelToken = currentDuelToken;
+    computerAttackTimerId = after(compDelay, () => {
+      if (duelToken !== currentDuelToken || attackerSide !== "computer") return;
+      resolveDuel("computerAttackLanded");
+    });
   }
 }
 
@@ -1338,8 +1350,7 @@ function runIntervalCountdown(seconds, onDone, totalSeconds = seconds) {
 }
 
 function maybeSpawnGachaBall(totalSeconds) {
-  const availableItems = Object.keys(ITEMS).filter((key) => !usedItems.has(key));
-  if (availableItems.length === 0) return;
+  const availableItems = Object.keys(ITEMS);
   if (Math.random() >= 0.5) return;
   const delay = randRange(300, Math.max(300, (totalSeconds - 3) * 1500));
   after(delay, () => spawnGachaBall(availableItems));
@@ -1351,6 +1362,7 @@ function spawnGachaBall(availableItems) {
   gachaAvailableItems = availableItems;
   gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
   gachaBallEl.style.animationPlayState = "";
+  gachaBallEl.style.animationDuration = `${randRange(4, 11).toFixed(2)}s`;
   void gachaBallEl.offsetWidth;
   const ltr = Math.random() < 0.5;
   gachaBallEl.classList.add(ltr ? "rolling-ltr" : "rolling-rtl");
@@ -1375,7 +1387,6 @@ function catchGachaBall(availableItems) {
   gachaBallEl.hidden = true;
   gachaBallEl.classList.remove("rolling-ltr", "rolling-rtl");
   const key = availableItems[Math.floor(Math.random() * availableItems.length)];
-  usedItems.add(key);
   collectedItems.push(key);
   renderCollectedItems();
   applyItemEffect(key);
@@ -1542,10 +1553,13 @@ function endMatch(forcedResult) {
   jankenStatsEl.hidden = false;
 }
 
+const HIT_IMAGES = ["assets/Junken/hit1.png", "assets/Junken/hit2.png"];
+
 function restartGame() {
   clearPendingTimers();
   isPaused = false;
   updatePauseUI();
+  hitFlashEl.src = HIT_IMAGES[Math.floor(Math.random() * HIT_IMAGES.length)];
   WINS_TO_WIN = 3;
   updateRoundTag();
   playerWins = 0;
@@ -1557,7 +1571,6 @@ function restartGame() {
   attackHits = 0;
   defendAttempts = 0;
   defendSuccesses = 0;
-  usedItems = new Set();
   collectedItems = [];
   renderCollectedItems();
   pendingLateShow = false;

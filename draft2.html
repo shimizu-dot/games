@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ペットトレーニングクイズ (draft)</title>
+<style>
+:root {
+  --bg1: #fdf3e3;
+  --bg2: #eef7ec;
+  --line: #e4d6bd;
+  --accent: #b0611a;
+  --text: #2a2016;
+  --surface: #ffffff;
+  --muted: #6a5a48;
+  --btn-grad-a: #f19a3e;
+  --btn-grad-b: #d97a1c;
+  --btn-border: #b0611a;
+  --correct: #4a8f4a;
+  --wrong: #c0392b;
+  --teacher-bg: #fff6e0;
+  --surface-a: rgba(255, 255, 255, 0.88);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg1: #1c1712;
+    --bg2: #14201a;
+    --line: #3a3024;
+    --accent: #e6a15a;
+    --text: #ecdfc9;
+    --surface: #221b14;
+    --muted: #b7a98f;
+    --btn-grad-a: #d97a1c;
+    --btn-grad-b: #a85a12;
+    --btn-border: #e6a15a;
+    --correct: #7cc47c;
+    --wrong: #e0685a;
+    --teacher-bg: #2c2416;
+    --surface-a: rgba(34, 27, 20, 0.85);
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  background: linear-gradient(160deg, var(--bg1), var(--bg2));
+  color: var(--text);
+  display: grid;
+  place-items: start center;
+  padding: 14px;
+}
+
+.game {
+  width: min(480px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(30, 20, 10, 0.18);
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.stage {
+  position: relative;
+  height: 720px;
+}
+
+.hero-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.hero-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+/* 画像内の黒板の位置に合わせたテキスト表示エリア */
+.board-text {
+  display: none;
+  position: absolute;
+  left: 19%;
+  top: 8%;
+  width: 52%;
+  height: 34%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3%;
+  overflow-y: auto;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #2a2016;
+}
+.board-text.show { display: flex; }
+.board-text .verdict {
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+.board-text .verdict.correct { color: var(--correct); }
+.board-text .verdict.wrong { color: var(--wrong); }
+
+.progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.progress .bar {
+  flex: 1;
+  height: 8px;
+  margin: 0 10px;
+  background: var(--bg1);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress .bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--btn-grad-a), var(--btn-grad-b));
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.question-image {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+}
+
+.question-text {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid var(--btn-border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.choice-btn .label {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.choice-btn .choice-thumb {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+
+.choice-btn .choice-text { flex: 1; }
+
+.choice-btn:disabled { cursor: default; opacity: 0.6; }
+.choice-btn.correct { border-color: var(--correct); background: rgba(74, 143, 74, 0.12); }
+.choice-btn.wrong { border-color: var(--wrong); background: rgba(192, 57, 43, 0.12); }
+.choice-btn.correct .label { background: var(--correct); }
+.choice-btn.wrong .label { background: var(--wrong); }
+
+.teacher {
+  display: none;
+  align-items: flex-start;
+  margin-top: 14px;
+  gap: 12px;
+}
+.teacher.show { display: flex; }
+
+.teacher .avatar {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  overflow: hidden;
+}
+.teacher .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.teacher .bubble {
+  position: relative;
+  flex: 1;
+  background: var(--teacher-bg);
+  border: 1px solid var(--line);
+  border-radius: 4px 14px 14px 14px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.teacher .bubble::before {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 10px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-right: 9px solid var(--line);
+}
+.teacher .bubble::after {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 11px;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-right: 8px solid var(--teacher-bg);
+}
+
+.teacher .verdict {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.teacher .verdict.correct { color: var(--correct); }
+.teacher .verdict.wrong { color: var(--wrong); }
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+button.next-btn {
+  display: none;
+  border: 1px solid var(--btn-border);
+  background: linear-gradient(180deg, var(--btn-grad-a), var(--btn-grad-b));
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+  padding: 9px 18px;
+  cursor: pointer;
+  font-size: 14px;
+}
+button.next-btn.show { display: inline-block; }
+button.next-btn:active { filter: brightness(0.95); }
+
+.result {
+  text-align: center;
+}
+.result .score {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 6px 0 4px;
+}
+.result .score-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.result .teacher {
+  display: flex;
+  text-align: left;
+}
+.result button.next-btn {
+  display: inline-block;
+  margin-top: 16px;
+}
+
+.start-screen, .question-screen, .result-screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow-y: auto;
+}
+.start-screen.show, .question-screen.show, .result-screen.show { display: block; }
+
+.start-screen p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.start-screen button.next-btn { display: inline-block; }
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>🐾 レーニングクイズ <span style="font-weight:400;font-size:12px;color:var(--muted);">(draft)</span></h1>
+
+  <div class="stage">
+    <!-- スタート画面 -->
+    <div class="card start-screen show" id="startScreen">
+      <img class="hero-image" src="assets/quiz/classroom.jpeg" alt="教室">
+      <p>
+        全5問のクイズです。正しいもの選んでください。<br>
+      </p>
+      <div class="actions">
+        <button class="next-btn show" id="startBtn">はじめる</button>
+      </div>
+    </div>
+
+    <!-- 出題画面 -->
+    <div class="question-screen" id="questionScreen">
+      <div class="progress">
+        <span id="qIndexLabel">第1問 / 5</span>
+        <div class="bar"><div class="bar-fill" id="progressBar"></div></div>
+        <span id="scoreLabel">スコア: 0pt</span>
+      </div>
+      <div class="card">
+        <div class="hero-wrap">
+          <img class="hero-image" src="assets/quiz/classroom.jpeg" alt="教室">
+          <div class="board-text" id="teacherComment">
+            <span class="verdict" id="verdictText"></span>
+            <span id="commentText"></span>
+          </div>
+        </div>
+        <img class="question-image" id="questionImage" alt="" hidden>
+        <p class="question-text" id="questionText"></p>
+        <div class="choices" id="choices"></div>
+
+        <div class="actions">
+          <button class="next-btn" id="nextBtn">次の問題へ</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div class="card result result-screen" id="resultScreen">
+      <div class="score" id="resultScore">0pt</div>
+      <div class="score-sub" id="resultRate">正解 0 / 5（正解率 0%）</div>
+      <div class="teacher show">
+        <div class="avatar">👩‍🏫</div>
+        <div class="bubble" id="resultComment"></div>
+      </div>
+      <button class="next-btn" id="retryBtn">もう一度挑戦する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ダミー問題データ。問題文・選択肢・コメントは後で差し替える。
+  const QUESTIONS = [
+    {
+      question: '問題1: 今日から新しい家族を迎えました。さて、何をしますか？',
+      image: null, // 例: 'images/q1.png'（未設定なら画像なし）
+      choices: ['一緒に遊びます。', 'そっとしておく。', 'ごはんを買いに行く。', 'わかりません。'],
+      choiceImages: [null, null, null, null], // 各選択肢のサムネイル（未設定ならテキストのみ）
+      correct: 1,
+      comments: [
+        '遊びたい気持ちはよくわかる。でも環境になれるまでは、そっとしておくのじゃ。',
+        'そのとおおり。よく観察する必要があるのじゃ。',
+        'はっ？ 思い付きで連れてきたのか？ 先に買っておけ！',
+        '素直な答えじゃ。このクイズでよく勉強するとよいぞ。',
+      ],
+    },
+    {
+      question: '問題2: さぁ、あいさつも済んで、そろそろご飯の時間じゃ。さて、何をあげようか？',
+      choices: ['歓迎の贅沢ごはん', '１日目は食事抜き', '前から食べていたものを少しだけ', 'わかりません。'],
+      correct: 2,
+      comments: [
+        '見栄をはってどうする。おなかを壊して、すぐ病院だぞ！',
+        '飢え死にさせる気か？ お前の食事をそうしてやるぞ。',
+        'よし、そのとおり。まずは少しずつ様子を見ながらあげるのじゃ。',
+        '素直な答えじゃ。このクイズでよく勉強するとよいぞ。',
+      ],
+    },
+    {
+      question: '問題3: あ、おしっこしてるぞ。さて、どうする？',
+      choices: ['何事もなかったように片付ける。', '大声で怒鳴りつける。', '抱えてトイレに走る。', 'わかりません。'],
+      correct: 0,
+      comments: [
+        'そのとおり。良いこと悪いことはまだ解らない。かまうと楽しいことと間違う可能性があるのじゃ。',
+        'バカモノ！ どなったところで理解できるわけがない。嫌われたいならやってみぃ。',
+        'お前もトイレに行きたかったのか？ ついでに頭を冷やしてこい！',
+        '素直な答えじゃ。このクイズでよく勉強するとよいぞ。',
+      ],
+    },
+    {
+      question: '問題4: そろそろ寝る時間じゃ。さて、どこで寝かせる？',
+      choices: ['添い寝するに決まってるでしょ。', '自由にさせてあげる。', '小屋に入れて、部屋を暗くしてあげる。', 'わかりません。'],
+      correct: 2,
+      comments: [
+        '朝起きて、つぶれてても知らんぞ。小屋で寝かせるのが一番じゃ。',
+        'あちこち噛んで、事故の元じゃぞ。小屋で寝かせるのが一番じゃ。',
+        '正解。ちと、簡単すぎたかのう。',
+        '素直な答えじゃ。このクイズでよく勉強するとよいぞ。',
+      ],
+    },
+    {
+      question: '問題5: 夜泣きが続いてるぞ。さて、どうする？',
+      choices: ['かわいそうだけど無視。', 'ドアの隙間から覗く。', '小屋の外に出してあげる。', 'わかりません。'],
+      correct: 0,
+      comments: [
+        'そのとおり。泣いても無駄なことを覚えさせるには、無視じゃ。',
+        '覗いていたら、ずっと泣くぞ。無視するのじゃ。',
+        '泣くと出してもらえることを学習するぞ。お前ももっと学習せぃ。',
+        '素直な答えじゃ。このクイズでよく勉強するとよいぞ。',
+      ],
+    },
+  ];
+
+  const LABELS = ['A', 'B', 'C', 'D'];
+
+  // 先生アイコンの画像。パスを設定すると絵文字の代わりに表示される。
+  const TEACHER_AVATAR_IMAGE = null; // 例: 'images/teacher.png'
+
+  const startScreen = document.getElementById('startScreen');
+  const questionScreen = document.getElementById('questionScreen');
+  const resultScreen = document.getElementById('resultScreen');
+
+  const qIndexLabel = document.getElementById('qIndexLabel');
+  const progressBar = document.getElementById('progressBar');
+  const scoreLabel = document.getElementById('scoreLabel');
+  const questionImage = document.getElementById('questionImage');
+  const questionText = document.getElementById('questionText');
+  const choicesEl = document.getElementById('choices');
+  const teacherComment = document.getElementById('teacherComment');
+  const verdictText = document.getElementById('verdictText');
+  const commentText = document.getElementById('commentText');
+  const nextBtn = document.getElementById('nextBtn');
+
+  const resultScore = document.getElementById('resultScore');
+  const resultRate = document.getElementById('resultRate');
+  const resultComment = document.getElementById('resultComment');
+
+  // 正解率に応じた先生コメント。上から順に、正解率がその割合以上なら採用される。
+  const RESULT_COMMENTS = [
+    { min: 1.0, comment: '全問正解とは、なかなかやるではないか。もう一人前の飼い主じゃな。' },
+    { min: 0.8, comment: 'よくできた。惜しいところもあったが、筋は良いぞ。' },
+    { min: 0.6, comment: 'まずまずじゃな。間違えたところは、しっかり復習しておくのじゃ。' },
+    { min: 0.4, comment: 'まだまだ勉強不足じゃぞ。もう一度挑戦してみい。' },
+    { min: 0,   comment: '飼育には向いていない。ぬいぐるみにしておけ。' },
+  ];
+
+  function pickResultComment(rate) {
+    const tier = RESULT_COMMENTS.find(t => rate >= t.min);
+    return tier ? tier.comment : RESULT_COMMENTS[RESULT_COMMENTS.length - 1].comment;
+  }
+
+  // 得点ルール: 正解 +3pt／不正解 -1pt／「わかりません」(D) 選択は +1pt
+  const POINTS_CORRECT = 3;
+  const POINTS_UNKNOWN = 1;
+  const POINTS_WRONG = -1;
+  const UNKNOWN_INDEX = 3; // D = わかりません
+
+  let current = 0;
+  let correctCount = 0;
+  let unknownCount = 0;
+  let points = 0;
+  let answered = false;
+
+  function showScreen(el) {
+    [startScreen, questionScreen, resultScreen].forEach(s => s.classList.remove('show'));
+    el.classList.add('show');
+  }
+
+  function renderQuestion() {
+    answered = false;
+    const q = QUESTIONS[current];
+    const choiceImages = q.choiceImages || [];
+
+    qIndexLabel.textContent = `第${current + 1}問 / ${QUESTIONS.length}`;
+    progressBar.style.width = `${(current / QUESTIONS.length) * 100}%`;
+    scoreLabel.textContent = `スコア: ${points}pt`;
+
+    if (q.image) {
+      questionImage.src = q.image;
+      questionImage.hidden = false;
+    } else {
+      questionImage.removeAttribute('src');
+      questionImage.hidden = true;
+    }
+
+    questionText.textContent = q.question;
+
+    choicesEl.innerHTML = '';
+    q.choices.forEach((choiceLabel, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      const thumbImg = choiceImages[i]
+        ? `<img class="choice-thumb" src="${choiceImages[i]}" alt="">`
+        : '';
+      btn.innerHTML = `<span class="label">${LABELS[i]}</span>${thumbImg}<span class="choice-text">${choiceLabel}</span>`;
+      btn.addEventListener('click', () => selectChoice(i));
+      choicesEl.appendChild(btn);
+    });
+
+    teacherComment.classList.remove('show');
+    nextBtn.classList.remove('show');
+  }
+
+  function selectChoice(i) {
+    if (answered) return;
+    answered = true;
+    const q = QUESTIONS[current];
+    const isCorrect = i === q.correct;
+    const isUnknownPick = i === UNKNOWN_INDEX;
+    if (isUnknownPick) unknownCount++;
+    if (isCorrect) {
+      correctCount++;
+      points += POINTS_CORRECT;
+    } else if (isUnknownPick) {
+      points += POINTS_UNKNOWN;
+    } else {
+      points += POINTS_WRONG;
+    }
+
+    const buttons = choicesEl.querySelectorAll('.choice-btn');
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === q.correct) btn.classList.add('correct');
+      else if (idx === i) btn.classList.add('wrong');
+    });
+
+    verdictText.textContent = isCorrect ? '正解！' : '不正解';
+    verdictText.className = 'verdict ' + (isCorrect ? 'correct' : 'wrong');
+    commentText.textContent = q.comments[i];
+    teacherComment.classList.add('show');
+
+    scoreLabel.textContent = `スコア: ${points}pt`;
+    nextBtn.textContent = current < QUESTIONS.length - 1 ? '次の問題へ' : '結果を見る';
+    nextBtn.classList.add('show');
+  }
+
+  function goNext() {
+    if (current < QUESTIONS.length - 1) {
+      current++;
+      renderQuestion();
+    } else {
+      showResult();
+    }
+  }
+
+  function showResult() {
+    progressBar.style.width = '100%';
+    const rate = correctCount / QUESTIONS.length;
+
+    resultScore.textContent = `${points}pt`;
+    resultRate.textContent = `正解 ${correctCount} / ${QUESTIONS.length}（正解率 ${Math.round(rate * 100)}%）`;
+    resultComment.textContent = unknownCount === QUESTIONS.length
+      ? 'そもそも飼う気はあるのか？'
+      : pickResultComment(rate);
+
+    showScreen(resultScreen);
+  }
+
+  function startQuiz() {
+    current = 0;
+    correctCount = 0;
+    unknownCount = 0;
+    points = 0;
+    showScreen(questionScreen);
+    renderQuestion();
+  }
+
+  function initTeacherAvatars() {
+    if (!TEACHER_AVATAR_IMAGE) return;
+    document.querySelectorAll('.teacher .avatar').forEach(el => {
+      el.innerHTML = `<img src="${TEACHER_AVATAR_IMAGE}" alt="先生">`;
+    });
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startQuiz);
+  document.getElementById('retryBtn').addEventListener('click', startQuiz);
+  nextBtn.addEventListener('click', goNext);
+
+  initTeacherAvatars();
+})();
+</script>
+</body>
+</html>

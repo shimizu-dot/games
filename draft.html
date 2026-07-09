@@ -614,8 +614,9 @@ button:active { filter: brightness(0.95); }
     const size = o.tier.draw * scale;
     const drawFn = o.tier.kind === 'rock' ? drawRock : o.tier.kind === 'bush' ? drawBush : drawTree;
 
-    // a row of rocks/bushes/trees blocking the full width of the path
-    const offsets = [-0.62, 0, 0.62];
+    // at most 2 rocks/bushes/trees per row
+    const count = Math.sin(o.seed * 7.13) > 0 ? 2 : 1;
+    const offsets = count === 2 ? [-0.45, 0.45] : [0];
     offsets.forEach((f, i) => {
       const jitter = Math.sin(o.seed + i * 12.9) * 0.12;
       const px = cx + (f + jitter) * halfW;
