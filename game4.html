@@ -836,6 +836,9 @@ diceImageEl.addEventListener("animationend", () => {
 restart(false);
 syncDiceTravelDistance();
 window.addEventListener("resize", syncDiceTravelDistance);
+window.addEventListener("keydown", (e) => {
+  if (e.code === "KeyR") restart();
+});
 
   </script>
 </body>

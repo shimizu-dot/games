@@ -1259,12 +1259,12 @@ function handleInput(action) {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (gameOver && gameWin && event.key === "Enter") {
-    nextStage();
+  if (event.key === "r" || event.key === "R") {
+    resetState();
     return;
   }
-  if (gameOver && !gameWin && (event.key === "r" || event.key === "R")) {
-    resetState();
+  if (gameOver && gameWin && event.key === "Enter") {
+    nextStage();
     return;
   }
   if (gameOver) return;

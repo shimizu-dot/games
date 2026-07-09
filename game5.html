@@ -1195,6 +1195,7 @@
           if (act === "right") setDirection("right");
           if (act === "pause") togglePause();
           if (act === "restart") resetGame();
+          if (act === "exit") window.location.href = "index.html";
         };
         btn.addEventListener("click", run);
         btn.addEventListener("touchstart", (e) => {

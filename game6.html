@@ -1673,6 +1673,9 @@ fireBtn.addEventListener("click", fireFromInput);
 coordInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter") fireFromInput();
 });
+window.addEventListener("keydown", (e) => {
+  if (e.code === "KeyR" && document.activeElement !== coordInput) restartGame();
+});
 
 restartGame();
   </script>
