@@ -501,6 +501,8 @@ button:disabled {
 .hit-flash {
   width: 75%;
   max-width: 75%;
+  aspect-ratio: 5 / 3;
+  object-fit: contain;
   border-radius: 12px;
   display: none;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
@@ -687,6 +689,20 @@ button:disabled {
   pointer-events: none;
 }
 
+.pause-overlay.start-overlay {
+  pointer-events: auto;
+  cursor: pointer;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.start-overlay .start-hint {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.85;
+}
+
 @media (max-width: 480px) {
   .game { padding: 14px; }
   h1 { font-size: 20px; }
@@ -839,6 +855,7 @@ let currentDuelToken = 0;
 let computerAttackTimerId = null;
 let pendingTimers = [];
 let isPaused = false;
+let gameStarted = false;
 let pauseStartedAt = 0;
 let savedChoiceButtonsEnabled = false;
 let savedDuelActionEnabled = false;
@@ -1051,6 +1068,25 @@ pauseBtn.addEventListener("click", () => {
   if (isPaused) resumeGame();
   else pauseGame();
 });
+
+function showStartFreeze() {
+  gameStarted = false;
+  pauseBtn.disabled = true;
+  pauseOverlayEl.textContent = "GAME START";
+  pauseOverlayEl.classList.add("start-overlay");
+  pauseOverlayEl.hidden = false;
+  pauseOverlayEl.addEventListener("click", dismissStartFreeze, { once: true });
+}
+
+function dismissStartFreeze() {
+  if (gameStarted) return;
+  gameStarted = true;
+  pauseBtn.disabled = false;
+  pauseOverlayEl.classList.remove("start-overlay");
+  pauseOverlayEl.textContent = "⏸ 一時停止中";
+  pauseOverlayEl.hidden = true;
+  startRound();
+}
 
 helpBtn.addEventListener("click", () => helpDialog.showModal());
 closeHelpBtn.addEventListener("click", () => helpDialog.close());
@@ -1480,9 +1516,11 @@ function resolveDuel(outcome) {
       break;
   }
 
-  // the counter effect only gets one shot: if this duel didn't trigger it
-  // (guarded attack, wrong selection, dodged/hit as defender, etc.), it's spent.
-  if (pendingCounterKnockdown) {
+  // the counter effect only gets one shot, but only on a duel where the player
+  // was actually attacking (missed attack, wrong item as attacker). A duel where
+  // the player was defending never had a chance to trigger it, so it must not
+  // burn the pending pebble buff.
+  if (pendingCounterKnockdown && attackerSide === "player") {
     pendingCounterKnockdown = false;
   }
 
@@ -1588,7 +1626,7 @@ function restartGame() {
   winnerImageEl.hidden = true;
   loserImageEl.hidden = true;
   resultTickerEl.hidden = true;
-  startRound();
+  showStartFreeze();
 }
 
 restartBtn.addEventListener("click", restartGame);
@@ -1599,6 +1637,12 @@ exitBtn.addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
   if (e.target === modeSliderEl) return;
 
+  if (!gameStarted) {
+    e.preventDefault();
+    dismissStartFreeze();
+    return;
+  }
+
   if (e.key === "r" || e.key === "R") {
     e.preventDefault();
     restartGame();
@@ -1608,6 +1652,12 @@ document.addEventListener("keydown", (e) => {
   if ((e.key === "g" || e.key === "G") && !gachaBallEl.hidden && !gachaCaught) {
     e.preventDefault();
     catchGachaBall(gachaAvailableItems);
+    return;
+  }
+
+  if (e.key === "e" || e.key === "E") {
+    e.preventDefault();
+    window.location.href = "index.html";
     return;
   }
 
@@ -1642,7 +1692,7 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-restartGame();
+showStartFreeze();
   </script>
 </body>
 </html>

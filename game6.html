@@ -1675,6 +1675,7 @@ coordInput.addEventListener("keydown", (e) => {
 });
 window.addEventListener("keydown", (e) => {
   if (e.code === "KeyR" && document.activeElement !== coordInput) restartGame();
+  if (e.code === "KeyE" && document.activeElement !== coordInput) window.location.href = "index.html";
 });
 
 restartGame();

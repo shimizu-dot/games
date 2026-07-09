@@ -1263,6 +1263,10 @@ window.addEventListener("keydown", (event) => {
     resetState();
     return;
   }
+  if (event.key === "e" || event.key === "E") {
+    window.location.href = "index.html";
+    return;
+  }
   if (gameOver && gameWin && event.key === "Enter") {
     nextStage();
     return;

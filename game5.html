@@ -1141,7 +1141,7 @@
         resetGame({ level: level + 1 });
       }
 
-      const HANDLED_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "KeyR", "Enter"]);
+      const HANDLED_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Space", "KeyR", "KeyE", "Enter"]);
 
       window.addEventListener("keydown", (event) => {
         if (!HANDLED_KEYS.has(event.code)) return;
@@ -1153,6 +1153,7 @@
         else if (event.code === "ArrowRight") setDirection("right");
         else if (event.code === "Space") togglePause();
         else if (event.code === "KeyR") resetGame();
+        else if (event.code === "KeyE") window.location.href = "index.html";
         else if (event.code === "Enter" && win) nextStage();
       }, { passive: false });
 

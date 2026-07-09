@@ -925,6 +925,7 @@ barrelStageEl.addEventListener("pointerup", endBarrelDrag);
 barrelStageEl.addEventListener("pointercancel", endBarrelDrag);
 window.addEventListener("keydown", (e) => {
   if (e.code === "KeyR") showSetupStage();
+  if (e.code === "KeyE") window.location.href = "index.html";
 });
 
 buildBarrelStructure();
