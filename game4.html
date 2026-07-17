@@ -36,7 +36,6 @@ body {
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(25, 82, 145, 0.12);
   padding: 18px;
-  overflow-x: auto;
 }
 
 h1 {
@@ -46,9 +45,8 @@ h1 {
 
 .board {
   display: grid;
-  grid-template-columns: repeat(10, 84px);
-  grid-auto-rows: 84px;
-  gap: 8px;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: clamp(4px, 1.2vw, 8px);
   margin-bottom: 16px;
   justify-content: center;
 }
@@ -56,17 +54,18 @@ h1 {
 .cell {
   border: 1px solid var(--line);
   border-radius: 10px;
-  width: 84px;
-  height: 84px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
   background: #f9fcff;
-  padding: 6px;
+  padding: 4px;
   display: flex;
   flex-direction: column;
   position: relative;
 }
 
 .cell span {
-  font-size: 12px;
+  font-size: clamp(8px, 2.4vw, 12px);
   font-weight: 700;
   color: #2d4f73;
 }
@@ -108,9 +107,9 @@ h1 {
 .event-label {
   align-self: flex-start;
   margin-top: 2px;
-  padding: 1px 6px;
+  padding: 1px 5px;
   border-radius: 999px;
-  font-size: 10px;
+  font-size: clamp(6px, 1.8vw, 10px);
   font-weight: 700;
   line-height: 1.4;
   background: rgba(22, 47, 77, 0.1);
@@ -118,24 +117,26 @@ h1 {
 }
 
 .player {
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
   border-radius: 50%;
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: clamp(6px, 1.8vw, 11px);
   font-weight: 700;
   box-shadow: 0 3px 8px rgba(21, 49, 79, 0.25);
 }
 
 .players {
   display: grid;
-  grid-template-columns: repeat(2, 24px);
-  grid-auto-rows: 24px;
-  gap: 4px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(0, 1fr);
+  gap: 2px;
   justify-content: end;
-  min-height: 52px;
+  min-height: 30%;
+  width: 100%;
   margin-top: auto;
 }
 
@@ -303,6 +304,52 @@ button:disabled {
 
 .logs p:last-child {
   margin-bottom: 0;
+}
+
+@media (max-width: 700px) {
+  .board {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  .game {
+    padding: 12px;
+    border-radius: 10px;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .board {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .controls {
+    gap: 6px;
+  }
+
+  .controls select,
+  button {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .dice-visual img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .status {
+    font-size: 14px;
+  }
 }
   </style>
 </head>
